@@ -1,198 +1,309 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Plus, 
-  Search, 
-  Flame, 
-  Bookmark,
-  Check,
-  ArrowRight
-} from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableRow,
-} from "@/components/ui/table"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/use-toast";
-import {
-  loadDecks,
-  deleteDeck,
-  updateStreak,
-  loadSettings,
-} from "@/utils/storage";
-import { getStudyStats } from "@/utils/spacedRepetition";
-import { format } from 'date-fns';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Settings as SettingsIcon, BookOpen, Calendar, BarChart, Clock, Trash2, Edit } from "lucide-react";
+import { loadAllDecks, loadSettings, deleteDecks, getDueCardsCount } from "@/utils/storage";
+import { getDueCards } from "@/utils/spacedRepetition";
+import { formatDistanceToNow } from "date-fns";
+import { SettingsDialog } from "@/components/SettingsDialog";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [decks, setDecks] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [streak, setStreak] = useState(0);
-  const [settings, setSettings] = useState(loadSettings());
+  const [decks, setDecks] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [streakCount, setStreakCount] = useState(0);
+  const [totalStudied, setTotalStudied] = useState(0);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 
   useEffect(() => {
-    const loadedDecks = loadDecks();
-    setDecks(loadedDecks);
+    loadDashboardData();
   }, []);
 
-  useEffect(() => {
-    const currentStreak = updateStreak();
-    setStreak(currentStreak);
-    setSettings(loadSettings());
-  }, []);
-
-  const handleDeleteDeck = (deckId: string) => {
-    deleteDeck(deckId);
-    setDecks(decks.filter((deck) => deck.id !== deckId));
-    toast({
-      title: "Deck deleted",
-      description: "The deck has been successfully deleted.",
+  const loadDashboardData = () => {
+    setIsLoading(true);
+    
+    // Load decks
+    const allDecks = loadAllDecks();
+    
+    // Sort decks by last studied date (most recent first)
+    allDecks.sort((a, b) => {
+      if (!a.lastStudied) return 1;
+      if (!b.lastStudied) return -1;
+      return b.lastStudied - a.lastStudied;
     });
+    
+    setDecks(allDecks);
+    
+    // Load user stats
+    const settings = loadSettings();
+    setStreakCount(settings.streak || 0);
+    setTotalStudied(settings.totalCardsStudied || 0);
+    
+    setIsLoading(false);
   };
 
-  const filteredDecks = decks.filter((deck) =>
-    deck.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleCreateDeck = () => {
+    navigate("/create");
+  };
+
+  const handleEditDeck = (deckId: string) => {
+    navigate(`/edit/${deckId}`);
+  };
+
+  const handleStudyDeck = (deckId: string) => {
+    navigate(`/study/${deckId}`);
+  };
+
+  const handleViewStats = (deckId: string) => {
+    navigate(`/stats/${deckId}`);
+  };
+
+  const handleDeleteDeck = (deckId: string) => {
+    if (window.confirm("Are you sure you want to delete this deck? This action cannot be undone.")) {
+      deleteDecks([deckId]);
+      loadDashboardData();
+    }
+  };
+
+  // Filter decks based on active tab
+  const filteredDecks = decks.filter(deck => {
+    if (activeTab === "all") return true;
+    if (activeTab === "due") {
+      return getDueCardsCount(deck.cards) > 0;
+    }
+    return false;
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-5xl px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back! Review your decks and track your progress.
-          </p>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowSettingsDialog(true)} variant="outline" size="icon">
+            <SettingsIcon className="h-5 w-5" />
+            <span className="sr-only">Settings</span>
+          </Button>
+          <Button onClick={handleCreateDeck}>
+            <Plus className="mr-2 h-4 w-4" /> Create Deck
+          </Button>
         </div>
-        <Button onClick={() => navigate("/create")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Deck
-        </Button>
       </div>
 
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center">
-              <Flame className="h-4 w-4 mr-2 text-orange-500" />
-              <div>
-                <h2 className="text-lg font-semibold">Current Streak</h2>
-                <p className="text-3xl font-bold">{streak} days</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <Bookmark className="h-4 w-4 mr-2 text-blue-500" />
-              <div>
-                <h2 className="text-lg font-semibold">Total Cards Studied</h2>
-                <p className="text-3xl font-bold">{settings.totalCardsStudied}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="mb-4">
-        <Input
-          type="search"
-          placeholder="Search decks..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      {filteredDecks.length > 0 ? (
-        <div className="rounded-md border">
-          <Table>
-            <TableCaption>A list of your decks.</TableCaption>
-            <TableHead>
-              <TableRow>
-                <TableHead scope="col" className="w-1/4">Title</TableHead>
-                <TableHead scope="col" className="text-center w-1/12">Cards</TableHead>
-                <TableHead scope="col" className="w-1/6">Due</TableHead>
-                <TableHead scope="col" className="w-1/6">Last Studied</TableHead>
-                <TableHead scope="col" className="text-right w-1/4">Actions</TableHead>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredDecks.map((deck) => {
-                const stats = getStudyStats(deck.cards);
-                const lastStudiedDate = deck.lastStudied ? new Date(deck.lastStudied) : null;
-
-                return (
-                  <TableRow key={deck.id}>
-                    <TableCell className="font-medium">{deck.title}</TableCell>
-                    <TableCell className="text-center">{stats.totalCount}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {stats.dueCount > 0 && (
-                          <Badge variant="destructive">
-                            {stats.dueCount} Due
-                          </Badge>
-                        )}
-                        {stats.newCount > 0 && (
-                          <Badge variant="secondary">
-                            {stats.newCount} New
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {lastStudiedDate ? format(lastStudiedDate, 'MMM dd, yyyy') : 'Never'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => navigate(`/edit/${deck.id}`)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => navigate(`/study/${deck.id}`)}
-                        >
-                          Study <ArrowRight className="h-4 w-4 ml-2" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteDeck(deck.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
-          <CardContent className="p-6 flex flex-col items-center justify-center space-y-4">
-            <Search className="h-10 w-10 text-muted-foreground" />
-            <h2 className="text-xl font-medium">No decks found</h2>
-            <p className="text-muted-foreground">
-              Create a new deck to start learning.
-            </p>
-            <Button onClick={() => navigate("/create")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create New Deck
-            </Button>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center">
+              <Calendar className="h-5 w-5 text-muted-foreground mr-2" />
+              <span className="text-2xl font-bold">{streakCount} days</span>
+            </div>
           </CardContent>
         </Card>
-      )}
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Cards Due Today</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center">
+              <Clock className="h-5 w-5 text-muted-foreground mr-2" />
+              <span className="text-2xl font-bold">
+                {decks.reduce((total, deck) => total + getDueCardsCount(deck.cards), 0)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Cards Studied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center">
+              <BarChart className="h-5 w-5 text-muted-foreground mr-2" />
+              <span className="text-2xl font-bold">{totalStudied}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs 
+        defaultValue="all" 
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="mb-8"
+      >
+        <TabsList>
+          <TabsTrigger value="all">All Decks</TabsTrigger>
+          <TabsTrigger value="due">Due for Review</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="mt-6">
+          {filteredDecks.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-muted-foreground mb-4">You don't have any decks yet</p>
+                <Button onClick={handleCreateDeck}>
+                  <Plus className="mr-2 h-4 w-4" /> Create Your First Deck
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Deck Name</TableHead>
+                    <TableHead>Cards</TableHead>
+                    <TableHead>Due</TableHead>
+                    <TableHead>Last Studied</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDecks.map(deck => {
+                    const dueCount = getDueCardsCount(deck.cards);
+                    return (
+                      <TableRow key={deck.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex flex-col">
+                            <span>{deck.title}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {deck.sourceLang} → {deck.targetLang}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{deck.cards.length}</TableCell>
+                        <TableCell>
+                          {dueCount > 0 ? (
+                            <Badge variant="secondary">{dueCount}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {deck.lastStudied ? formatDistanceToNow(deck.lastStudied, { addSuffix: true }) : 'Never'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              onClick={() => handleStudyDeck(deck.id)}
+                              disabled={dueCount === 0}
+                            >
+                              <BookOpen className="h-4 w-4" />
+                              <span className="sr-only">Study</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleEditDeck(deck.id)}
+                            >
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleViewStats(deck.id)}
+                            >
+                              <BarChart className="h-4 w-4" />
+                              <span className="sr-only">Stats</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleDeleteDeck(deck.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </TabsContent>
+        <TabsContent value="due" className="mt-6">
+          {filteredDecks.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-muted-foreground">No decks due for review</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Deck Name</TableHead>
+                    <TableHead>Cards</TableHead>
+                    <TableHead>Due</TableHead>
+                    <TableHead>Last Studied</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDecks.map(deck => {
+                    const dueCount = getDueCardsCount(deck.cards);
+                    return (
+                      <TableRow key={deck.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex flex-col">
+                            <span>{deck.title}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {deck.sourceLang} → {deck.targetLang}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{deck.cards.length}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{dueCount}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {deck.lastStudied ? formatDistanceToNow(deck.lastStudied, { addSuffix: true }) : 'Never'}
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStudyDeck(deck.id)}
+                          >
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            Study Now
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+      <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
     </div>
   );
 };

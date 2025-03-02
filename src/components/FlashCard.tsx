@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Volume } from "lucide-react";
+import { toast } from "sonner";
 
 interface FlashCardProps {
   front: string;
@@ -26,6 +27,7 @@ const FlashCard = ({
   const [isFlipped, setIsFlipped] = useState(false);
   const [hasBeenFlipped, setHasBeenFlipped] = useState(false);
   const [isInitialRender, setIsInitialRender] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -43,6 +45,54 @@ const FlashCard = ({
     if (audio && audioRef.current) {
       audioRef.current.play().catch(error => {
         console.error("Error playing audio:", error);
+      });
+    } else {
+      // Use ElevenLabs for text-to-speech
+      const settings = JSON.parse(localStorage.getItem("lingua_settings") || "{}");
+      const elevenLabsKey = settings.elevenLabsKey;
+      
+      if (!elevenLabsKey) {
+        toast.error("Please add your ElevenLabs API key in settings");
+        return;
+      }
+      
+      setIsSpeaking(true);
+      
+      // Use ElevenLabs API to convert text to speech
+      fetch("https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": elevenLabsKey
+        },
+        body: JSON.stringify({
+          text: isFlipped ? back : front,
+          model_id: "eleven_multilingual_v2",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75
+          }
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to generate speech");
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(url);
+        };
+        audio.play();
+      })
+      .catch(error => {
+        console.error("Error generating speech:", error);
+        toast.error("Failed to generate speech. Please check your API key.");
+        setIsSpeaking(false);
       });
     }
   };
@@ -87,20 +137,19 @@ const FlashCard = ({
           )}
           <h3 className="text-2xl font-medium text-center">{front}</h3>
           <div className="text-xs text-muted-foreground mt-1">{language}</div>
-          {audio && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute bottom-2 right-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                playAudio();
-              }}
-            >
-              <Volume className="h-5 w-5" />
-              <span className="sr-only">Play pronunciation</span>
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute bottom-2 right-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              playAudio();
+            }}
+            disabled={isSpeaking}
+          >
+            <Volume className={cn("h-5 w-5", isSpeaking ? "text-primary animate-pulse" : "")} />
+            <span className="sr-only">Listen to pronunciation</span>
+          </Button>
         </div>
 
         {/* Back of card */}
@@ -111,6 +160,19 @@ const FlashCard = ({
           )}
         >
           <h3 className="text-2xl font-medium text-center mb-6">{back}</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute bottom-2 right-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              playAudio();
+            }}
+            disabled={isSpeaking}
+          >
+            <Volume className={cn("h-5 w-5", isSpeaking ? "text-primary animate-pulse" : "")} />
+            <span className="sr-only">Listen to pronunciation</span>
+          </Button>
           {showButtons && hasBeenFlipped && (
             <div className="flex items-center justify-center gap-3 mt-auto">
               <Button

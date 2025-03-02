@@ -19,6 +19,7 @@
     "test:ci:full": "playwright test --reporter=list,html,junit"
   },
   "dependencies": {
+    "@11labs/react": "^0.0.7",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",

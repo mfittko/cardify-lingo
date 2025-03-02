@@ -1,4 +1,3 @@
-
 // Type definitions
 export interface Card {
   id: string;
@@ -25,19 +24,23 @@ export interface Deck {
   tags?: string[];
 }
 
-export interface UserSettings {
-  selectedLanguagePair?: { id: string; source: string; target: string };
-  streakCount: number;
-  lastStudyDate?: number;
+export interface Settings {
+  selectedLanguagePair?: {
+    source: string;
+    target: string;
+  };
+  streak: number;
+  lastStreakUpdate: number;
   totalCardsStudied: number;
-  theme?: "light" | "dark" | "system";
+  openAIKey?: string;
+  elevenLabsKey?: string;
 }
 
 // Default settings
-const DEFAULT_SETTINGS: UserSettings = {
-  streakCount: 0,
+const DEFAULT_SETTINGS: Settings = {
+  streak: 0,
+  lastStreakUpdate: 0,
   totalCardsStudied: 0,
-  theme: "system",
 };
 
 // Storage keys
@@ -107,7 +110,7 @@ export const deleteDeck = (deckId: string): void => {
 };
 
 // Load user settings
-export const loadSettings = (): UserSettings => {
+export const loadSettings = (): Settings => {
   try {
     const settingsJson = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     return settingsJson 
@@ -120,7 +123,7 @@ export const loadSettings = (): UserSettings => {
 };
 
 // Save user settings
-export const saveSettings = (settings: UserSettings): void => {
+export const saveSettings = (settings: Settings): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   } catch (error) {
@@ -137,21 +140,21 @@ export const updateStreak = (): number => {
     const yesterday = today - (24 * 60 * 60 * 1000);
     
     if (!settings.lastStudyDate) {
-      settings.streakCount = 1;
+      settings.streak = 1;
     } else if (settings.lastStudyDate === today) {
       // Already studied today, don't increment
     } else if (settings.lastStudyDate === yesterday) {
       // Studied yesterday, increment streak
-      settings.streakCount += 1;
+      settings.streak += 1;
     } else {
       // Streak broken
-      settings.streakCount = 1;
+      settings.streak = 1;
     }
     
     settings.lastStudyDate = today;
     
     saveSettings(settings);
-    return settings.streakCount;
+    return settings.streak;
   } catch (error) {
     console.error("Error updating streak:", error);
     return 0;
