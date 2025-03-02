@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupDashboard, fillCardByIndex } from './utils';
 
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
@@ -42,9 +43,8 @@ test.describe('Dashboard', () => {
     // Verify we're on the card creation page
     await expect(page.getByText('Cards (1)')).toBeVisible();
     
-    // Add a card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Add a card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Create the deck
     await page.click('text=Create Deck');

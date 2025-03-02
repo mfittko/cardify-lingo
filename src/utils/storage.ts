@@ -52,6 +52,74 @@ const STORAGE_KEYS = {
   SETTINGS: "flashcards_settings",
 };
 
+// Example translations for language pairs
+export const languageExamples: Record<string, { front: string; back: string }> = {
+  "en-de": { front: "Hello", back: "Hallo" },
+  "en-es": { front: "Hello", back: "Hola" },
+  "en-fr": { front: "Hello", back: "Bonjour" },
+  "en-it": { front: "Hello", back: "Ciao" },
+  "en-pt": { front: "Hello", back: "Olá" },
+  "en-nl": { front: "Hello", back: "Hallo" },
+  "en-ru": { front: "Hello", back: "Привет" },
+  "en-ja": { front: "Hello", back: "こんにちは" },
+  "en-zh": { front: "Hello", back: "你好" },
+  "en-ko": { front: "Hello", back: "안녕하세요" },
+  "en-ar": { front: "Hello", back: "مرحبا" },
+  "en-hi": { front: "Hello", back: "नमस्ते" },
+  "en-tr": { front: "Hello", back: "Merhaba" },
+  "en-pl": { front: "Hello", back: "Cześć" },
+  "en-sv": { front: "Hello", back: "Hej" },
+  "de-en": { front: "Hallo", back: "Hello" },
+  "es-en": { front: "Hola", back: "Hello" },
+  "fr-en": { front: "Bonjour", back: "Hello" },
+  "it-en": { front: "Ciao", back: "Hello" },
+  "pt-en": { front: "Olá", back: "Hello" },
+  "nl-en": { front: "Hallo", back: "Hello" },
+  "ru-en": { front: "Привет", back: "Hello" },
+  "ja-en": { front: "こんにちは", back: "Hello" },
+  "zh-en": { front: "你好", back: "Hello" },
+  "ko-en": { front: "안녕하세요", back: "Hello" },
+  "ar-en": { front: "مرحبا", back: "Hello" },
+  "hi-en": { front: "नमस्ते", back: "Hello" },
+  "tr-en": { front: "Merhaba", back: "Hello" },
+  "pl-en": { front: "Cześć", back: "Hello" },
+  "sv-en": { front: "Hej", back: "Hello" },
+  // Add more language pairs as needed
+};
+
+// Mapping from full language names to language codes
+const languageNameToCode: Record<string, string> = {
+  "English": "en",
+  "Spanish": "es",
+  "French": "fr",
+  "German": "de",
+  "Italian": "it",
+  "Portuguese": "pt",
+  "Dutch": "nl",
+  "Russian": "ru",
+  "Japanese": "ja",
+  "Chinese": "zh",
+  "Korean": "ko",
+  "Arabic": "ar",
+  "Hindi": "hi",
+  "Turkish": "tr",
+  "Polish": "pl",
+  "Swedish": "sv",
+};
+
+// Helper function to get example for a language pair
+export function getLanguageExample(source: string, target: string): { front: string; back: string } {
+  // Convert language names to codes if needed
+  const sourceCode = languageNameToCode[source] || source;
+  const targetCode = languageNameToCode[target] || target;
+  
+  // Create the pair key using the codes
+  const pairKey = `${sourceCode}-${targetCode}`;
+  
+  // Look up the example
+  return languageExamples[pairKey] || { front: "Example", back: "Translation" };
+}
+
 // Load all decks from local storage
 export const loadDecks = (): Deck[] => {
   try {

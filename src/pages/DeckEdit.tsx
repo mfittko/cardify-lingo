@@ -16,7 +16,7 @@ import {
   Loader2
 } from "lucide-react";
 import { toast } from "sonner";
-import { saveDeck, loadDeck, loadSettings } from "@/utils/storage";
+import { saveDeck, loadDeck, loadSettings, getLanguageExample } from "@/utils/storage";
 import { createCard } from "@/utils/spacedRepetition";
 import { motion, AnimatePresence } from "framer-motion";
 import { AIKeyDialog } from "@/components/AIKeyDialog";
@@ -43,6 +43,10 @@ const DeckEdit = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showKeyDialog, setShowKeyDialog] = useState(false);
+  const [deckLanguagePair, setDeckLanguagePair] = useState<{
+    source: string;
+    target: string;
+  } | null>(null);
 
   // Load the deck data when the component mounts
   useEffect(() => {
@@ -62,6 +66,12 @@ const DeckEdit = () => {
     // Set the deck details
     setTitle(deck.title);
     setDescription(deck.description || "");
+    
+    // Store the deck's language pair
+    setDeckLanguagePair({
+      source: deck.sourceLang,
+      target: deck.targetLang
+    });
     
     // Convert cards to card forms (only the fields we need for editing)
     const forms = deck.cards.map(card => ({
@@ -107,8 +117,8 @@ const DeckEdit = () => {
       return;
     }
 
-    if (!settings.selectedLanguagePair) {
-      toast.error("No language pair selected. Please go back to the home screen and select a language pair.");
+    if (!deckLanguagePair) {
+      toast.error("No language pair found for this deck");
       return;
     }
 
@@ -116,8 +126,8 @@ const DeckEdit = () => {
   };
 
   const handleGenerateCards = async () => {
-    if (!settings.selectedLanguagePair) {
-      toast.error("No language pair selected");
+    if (!deckLanguagePair) {
+      toast.error("No language pair found for this deck");
       return;
     }
 
@@ -146,18 +156,32 @@ const DeckEdit = () => {
       const newCards = await generateFlashcards(
         title,
         description,
-        settings.selectedLanguagePair.source,
-        settings.selectedLanguagePair.target,
+        deckLanguagePair.source,
+        deckLanguagePair.target,
         5, // Generate 5 cards
         existingCards // Pass existing cards to avoid duplicates
       );
 
-      // Add the new cards to the existing cards
-      setCardForms(prev => [...prev, ...newCards.map(card => ({
-        id: card.id,
-        front: card.front,
-        back: card.back
-      }))]);
+      // Check if we have only one card and it's empty
+      const hasOnlyEmptyCard = cardForms.length === 1 && 
+                              !cardForms[0].front.trim() && 
+                              !cardForms[0].back.trim();
+
+      // If we have only one empty card, replace it with the AI-generated cards
+      // Otherwise, add the new cards to the existing cards
+      if (hasOnlyEmptyCard) {
+        setCardForms(newCards.map(card => ({
+          id: card.id,
+          front: card.front,
+          back: card.back
+        })));
+      } else {
+        setCardForms(prev => [...prev, ...newCards.map(card => ({
+          id: card.id,
+          front: card.front,
+          back: card.back
+        }))]);
+      }
 
       toast.success("Generated 5 new flashcards!");
     } catch (error) {
@@ -185,8 +209,8 @@ const DeckEdit = () => {
       return;
     }
 
-    if (!settings.selectedLanguagePair) {
-      toast.error("No language pair selected");
+    if (!deckLanguagePair) {
+      toast.error("No language pair found for this deck");
       return;
     }
 
@@ -234,8 +258,8 @@ const DeckEdit = () => {
       ...originalDeck,
       title,
       description,
-      sourceLang: settings.selectedLanguagePair.source,
-      targetLang: settings.selectedLanguagePair.target,
+      sourceLang: deckLanguagePair.source,
+      targetLang: deckLanguagePair.target,
       cards: updatedCards,
     };
 
@@ -306,11 +330,11 @@ const DeckEdit = () => {
                 <div className="text-sm text-muted-foreground pt-2">
                   <p className="font-medium">Language Pair</p>
                   <p>
-                    {settings.selectedLanguagePair ? (
-                      `${settings.selectedLanguagePair.source} → ${settings.selectedLanguagePair.target}`
+                    {deckLanguagePair ? (
+                      `${deckLanguagePair.source} → ${deckLanguagePair.target}`
                     ) : (
                       <span className="text-red-500 flex items-center mt-1">
-                        <AlertCircle className="h-4 w-4 mr-1" /> No language pair selected
+                        <AlertCircle className="h-4 w-4 mr-1" /> No language pair found
                       </span>
                     )}
                   </p>
@@ -376,25 +400,29 @@ const DeckEdit = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor={`card-front-${index}`}>
-                        Front ({settings.selectedLanguagePair?.source})
+                        Front ({deckLanguagePair?.source})
                       </Label>
                       <Input 
                         id={`card-front-${index}`} 
                         value={card.front} 
                         onChange={(e) => updateCard(index, "front", e.target.value)} 
-                        placeholder="e.g., Hello"
+                        placeholder={deckLanguagePair 
+                          ? `e.g., ${getLanguageExample(deckLanguagePair.source, deckLanguagePair.target).front}` 
+                          : "e.g., Front side"}
                       />
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor={`card-back-${index}`}>
-                        Back ({settings.selectedLanguagePair?.target})
+                        Back ({deckLanguagePair?.target})
                       </Label>
                       <Input 
                         id={`card-back-${index}`} 
                         value={card.back} 
                         onChange={(e) => updateCard(index, "back", e.target.value)} 
-                        placeholder={`e.g., Translation`}
+                        placeholder={deckLanguagePair 
+                          ? `e.g., ${getLanguageExample(deckLanguagePair.source, deckLanguagePair.target).back}` 
+                          : "e.g., Back side"}
                       />
                     </div>
                     

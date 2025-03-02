@@ -18,7 +18,7 @@ import {
   Loader2
 } from "lucide-react";
 import { toast } from "sonner";
-import { saveDeck, generateId, loadSettings, saveSettings } from "@/utils/storage";
+import { saveDeck, generateId, loadSettings, saveSettings, getLanguageExample } from "@/utils/storage";
 import { createCard } from "@/utils/spacedRepetition";
 import { motion, AnimatePresence } from "framer-motion";
 import { AIKeyDialog } from "@/components/AIKeyDialog";
@@ -151,11 +151,24 @@ const DeckCreation = () => {
         existingCards // Pass existing cards to avoid duplicates
       );
 
-      // Add the new cards to the existing cards
-      setCardForms(prev => [...prev, ...newCards.map(card => ({
-        front: card.front,
-        back: card.back
-      }))]);
+      // Check if we have only one card and it's empty
+      const hasOnlyEmptyCard = cardForms.length === 1 && 
+                              !cardForms[0].front.trim() && 
+                              !cardForms[0].back.trim();
+
+      // If we have only one empty card, replace it with the AI-generated cards
+      // Otherwise, add the new cards to the existing cards
+      if (hasOnlyEmptyCard) {
+        setCardForms(newCards.map(card => ({
+          front: card.front,
+          back: card.back
+        })));
+      } else {
+        setCardForms(prev => [...prev, ...newCards.map(card => ({
+          front: card.front,
+          back: card.back
+        }))]);
+      }
 
       toast.success("Generated 5 new flashcards!");
     } catch (error) {
@@ -346,7 +359,7 @@ const DeckCreation = () => {
                         id={`card-front-${index}`} 
                         value={card.front} 
                         onChange={(e) => updateCard(index, "front", e.target.value)} 
-                        placeholder="e.g., Hello"
+                        placeholder={languagePair ? `e.g., ${getLanguageExample(languagePair.source, languagePair.target).front}` : "e.g., Front side"}
                       />
                     </div>
                     
@@ -358,7 +371,7 @@ const DeckCreation = () => {
                         id={`card-back-${index}`} 
                         value={card.back} 
                         onChange={(e) => updateCard(index, "back", e.target.value)} 
-                        placeholder="e.g., Hola"
+                        placeholder={languagePair ? `e.g., ${getLanguageExample(languagePair.source, languagePair.target).back}` : "e.g., Back side"}
                       />
                     </div>
                     

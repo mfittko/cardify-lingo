@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { setupDashboard, createBasicDeck } from './utils';
+import { setupDashboard, createBasicDeck, fillCardByIndex } from './utils';
 
 test.describe('Study Mode', () => {
   test.beforeEach(async ({ page }) => {
@@ -87,9 +87,8 @@ test.describe('Study Mode', () => {
     await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
     
-    // Add first card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Add a card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Add second card
     await page.click('text=Add Card');

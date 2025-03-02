@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupDashboard, fillCardByIndex } from './utils';
 
 test.describe('Deck Creation', () => {
   test.beforeEach(async ({ page }) => {
@@ -56,9 +57,8 @@ test.describe('Deck Creation', () => {
     // Click Next: Add Cards
     await page.click('text=Next: Add Cards');
     
-    // Add first card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Add first card using our helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Add a second card
     await page.click('text=Add Card');
@@ -66,12 +66,8 @@ test.describe('Deck Creation', () => {
     // Wait for the second card to be visible
     await page.waitForSelector('text=Card 2');
     
-    // Fill in the second card
-    const frontInputs = await page.locator('input[placeholder="e.g., Hello"]').all();
-    const backInputs = await page.locator('input[placeholder="e.g., Hola"]').all();
-    
-    await frontInputs[1].fill('Good morning');
-    await backInputs[1].fill('Buenos días');
+    // Fill in the second card using our helper function
+    await fillCardByIndex(page, 1, 'Good morning', 'Buenos días');
     
     // Add a third card
     await page.click('text=Add Card');
@@ -79,12 +75,8 @@ test.describe('Deck Creation', () => {
     // Wait for the third card to be visible
     await page.waitForSelector('text=Card 3');
     
-    // Fill in the third card
-    const updatedFrontInputs = await page.locator('input[placeholder="e.g., Hello"]').all();
-    const updatedBackInputs = await page.locator('input[placeholder="e.g., Hola"]').all();
-    
-    await updatedFrontInputs[2].fill('Goodbye');
-    await updatedBackInputs[2].fill('Adiós');
+    // Fill in the third card using our helper function
+    await fillCardByIndex(page, 2, 'Goodbye', 'Adiós');
     
     // Create the deck
     await page.click('text=Create Deck');
@@ -127,9 +119,8 @@ test.describe('Deck Creation', () => {
     // Click Next: Add Cards
     await page.click('text=Next: Add Cards');
     
-    // Add a card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Bonjour');
+    // Add a card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Bonjour');
     
     // Create the deck
     await page.click('text=Create Deck');
@@ -166,9 +157,8 @@ test.describe('Deck Creation', () => {
     // We should still be on the card creation page
     await expect(page.getByText('Cards (1)')).toBeVisible();
     
-    // Fill in the card and create the deck
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Fill in the card and create the deck using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     await page.click('text=Create Deck');
     

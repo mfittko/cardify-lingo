@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupDashboard, fillCardByIndex } from './utils';
 
 test.describe('Deck Edit', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,12 +18,11 @@ test.describe('Deck Edit', () => {
     
     // Create a new test deck for editing
     await page.click('text=Create Deck');
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.fill('input[placeholder^="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
     
-    // Add first card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Add first card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Create the deck
     await page.click('text=Create Deck');
@@ -60,12 +60,11 @@ test.describe('Deck Edit', () => {
     
     // Create a new test deck for editing
     await page.click('text=Create Deck');
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.fill('input[placeholder^="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
     
-    // Add first card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Add first card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Create the deck
     await page.click('text=Create Deck');
@@ -108,12 +107,11 @@ test.describe('Deck Edit', () => {
     
     // Create a new test deck for editing
     await page.click('text=Create Deck');
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.fill('input[placeholder^="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
     
-    // Add first card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Add first card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Create the deck
     await page.click('text=Create Deck');
@@ -214,12 +212,11 @@ test.describe('Deck Edit', () => {
     
     // Create a new test deck for editing
     await page.click('text=Create Deck');
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.fill('input[placeholder^="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
     
-    // Add first card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Add first card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Add second card
     await page.click('text=Add Card');
@@ -312,12 +309,11 @@ test.describe('Deck Edit', () => {
     
     // Create a new test deck for editing
     await page.click('text=Create Deck');
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.fill('input[placeholder^="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
     
-    // Add first card
-    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    // Add first card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Create the deck
     await page.click('text=Create Deck');
@@ -356,5 +352,62 @@ test.describe('Deck Edit', () => {
     
     // Verify we're back on the dashboard
     await expect(page.locator('h1')).toContainText('Dashboard');
+  });
+
+  test('should preserve language pair when editing a deck', async ({ page }) => {
+    // Create a unique test deck
+    const deckName = `Language Pair Deck ${Date.now()}`;
+    
+    // Create a new test deck with English → Spanish
+    await page.click('text=Create Deck');
+    await page.fill('input[placeholder^="e.g., Basic Spanish Phrases"]', deckName);
+    
+    // Verify the language pair is English → Spanish
+    const languagePairSelector = page.getByRole('combobox').first();
+    await expect(languagePairSelector).toContainText('English → Spanish');
+    
+    await page.click('text=Next: Add Cards');
+    
+    // Add first card using the helper function
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
+    
+    // Create the deck
+    await page.click('text=Create Deck');
+    
+    // Wait for the dashboard to load with the new deck
+    await expect(page.getByText(deckName)).toBeVisible();
+    
+    // Now go back to landing page and select a different language pair
+    await page.goto('/');
+    
+    // Select English → French using the dropdown
+    await page.getByRole('combobox').click();
+    await page.getByText('English → French').click();
+    
+    // Click View Dashboard
+    await page.getByRole('button', { name: 'View Dashboard' }).click();
+    
+    // Wait for the dashboard to load
+    await expect(page.locator('h1')).toContainText('Dashboard');
+    
+    // Click the Edit button on the deck we created earlier
+    await page.getByText(deckName).first().locator('xpath=ancestor::tr').getByRole('button', { name: 'Edit' }).click();
+    
+    // Verify we're on the edit page
+    await expect(page.getByText('Edit Deck')).toBeVisible();
+    
+    // Verify the language pair is still English → Spanish (from the deck)
+    // and not English → French (from the global setting)
+    await expect(page.getByText('Language Pair')).toBeVisible();
+    await expect(page.getByText('English → Spanish')).toBeVisible();
+    await expect(page.getByText('English → French')).not.toBeVisible();
+    
+    // Go to cards view
+    await page.click('text=Next: Edit Cards');
+    
+    // Verify the language labels show the correct languages (Spanish, not French)
+    await expect(page.getByText('Front (English)')).toBeVisible();
+    await expect(page.getByText('Back (Spanish)')).toBeVisible();
+    await expect(page.getByText('Back (French)')).not.toBeVisible();
   });
 });
