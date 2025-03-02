@@ -196,7 +196,7 @@ const DeckCreation = () => {
         {currentView === "details" ? "Back to Dashboard" : "Back to Details"}
       </Button>
       
-      <h1 className="text-3xl font-bold mb-6">Create New Deck</h1>
+      <h2 className="text-3xl font-bold mb-6">Create New Deck</h2>
       
       <AnimatePresence mode="wait">
         {currentView === "details" && (
