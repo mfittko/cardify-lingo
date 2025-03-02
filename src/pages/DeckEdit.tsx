@@ -394,7 +394,7 @@ const DeckEdit = () => {
                         id={`card-back-${index}`} 
                         value={card.back} 
                         onChange={(e) => updateCard(index, "back", e.target.value)} 
-                        placeholder="e.g., Hola"
+                        placeholder={`e.g., Translation`}
                       />
                     </div>
                     
