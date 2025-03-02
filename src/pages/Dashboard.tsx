@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,20 +6,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Settings as SettingsIcon, BookOpen, Calendar, BarChart, Clock, Trash2, Edit } from "lucide-react";
-import { loadAllDecks, loadSettings, deleteDecks, getDueCardsCount } from "@/utils/storage";
+import { Plus, Settings as SettingsIcon, BookOpen, Calendar, BarChart, Clock, Trash2, Edit, Search } from "lucide-react";
+import { loadAllDecks, loadSettings, deleteDecks, getDueCardsCount, type Deck } from "@/utils/storage";
 import { getDueCards } from "@/utils/spacedRepetition";
 import { formatDistanceToNow } from "date-fns";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { Input } from "@/components/ui/input";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [decks, setDecks] = useState<any[]>([]);
+  const [decks, setDecks] = useState<Deck[]>([]);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
   const [totalStudied, setTotalStudied] = useState(0);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadDashboardData();
@@ -50,7 +51,12 @@ const Dashboard = () => {
   };
 
   const handleCreateDeck = () => {
-    navigate("/create");
+    const settings = loadSettings();
+    navigate("/create", { 
+      state: { 
+        selectedLanguagePair: settings.selectedLanguagePair 
+      } 
+    });
   };
 
   const handleEditDeck = (deckId: string) => {
@@ -72,11 +78,17 @@ const Dashboard = () => {
     }
   };
 
-  // Filter decks based on active tab
+  // Filter decks based on active tab and search query
   const filteredDecks = decks.filter(deck => {
-    if (activeTab === "all") return true;
+    // First filter by tab
+    if (activeTab === "all") {
+      // Then filter by search query if present
+      return searchQuery ? deck.title.toLowerCase().includes(searchQuery.toLowerCase()) : true;
+    }
     if (activeTab === "due") {
-      return getDueCardsCount(deck.cards) > 0;
+      const isDue = getDueCardsCount(deck.cards) > 0;
+      // Then filter by search query if present
+      return isDue && (searchQuery ? deck.title.toLowerCase().includes(searchQuery.toLowerCase()) : true);
     }
     return false;
   });
@@ -144,6 +156,19 @@ const Dashboard = () => {
         </Card>
       </div>
 
+      <div className="flex items-center mb-6">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search decks..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
       <Tabs 
         defaultValue="all" 
         value={activeTab}
@@ -169,7 +194,7 @@ const Dashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Deck Name</TableHead>
+                    <TableHead>Title</TableHead>
                     <TableHead>Cards</TableHead>
                     <TableHead>Due</TableHead>
                     <TableHead>Last Studied</TableHead>
@@ -257,7 +282,7 @@ const Dashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Deck Name</TableHead>
+                    <TableHead>Title</TableHead>
                     <TableHead>Cards</TableHead>
                     <TableHead>Due</TableHead>
                     <TableHead>Last Studied</TableHead>

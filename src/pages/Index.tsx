@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,11 +32,21 @@ const Index = () => {
     
     // Save language selection to settings
     const settings = loadSettings();
-    settings.selectedLanguagePair = selectedPair;
+    settings.selectedLanguagePair = {
+      id: selectedPair.id,
+      source: selectedPair.source,
+      target: selectedPair.target
+    };
     saveSettings(settings);
   };
 
-  const handleContinue = () => {
+  const handleCreateDeck = () => {
+    if (languagePair) {
+      navigate("/create", { state: { selectedLanguagePair: languagePair } });
+    }
+  };
+
+  const handleViewDashboard = () => {
     if (languagePair) {
       navigate("/dashboard");
     }
@@ -92,13 +101,23 @@ const Index = () => {
             <LanguageSelector onSelect={handleLanguageSelect} />
           </div>
 
-          <Button 
-            onClick={handleContinue} 
-            disabled={!languagePair} 
-            className="w-full"
-          >
-            Continue
-          </Button>
+          <div className="space-y-3">
+            <Button 
+              onClick={handleCreateDeck} 
+              disabled={!languagePair} 
+              className="w-full"
+            >
+              Create New Deck
+            </Button>
+            <Button 
+              onClick={handleViewDashboard} 
+              disabled={!languagePair} 
+              variant="outline"
+              className="w-full"
+            >
+              View Dashboard
+            </Button>
+          </div>
         </motion.div>
 
         <motion.div 

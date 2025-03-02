@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
+import LanguageSelector from "@/components/LanguageSelector";
 import { 
   ArrowLeft, 
   Plus, 
@@ -17,7 +18,7 @@ import {
   Loader2
 } from "lucide-react";
 import { toast } from "sonner";
-import { saveDeck, generateId, loadSettings } from "@/utils/storage";
+import { saveDeck, generateId, loadSettings, saveSettings, getLanguageExample } from "@/utils/storage";
 import { createCard } from "@/utils/spacedRepetition";
 import { motion, AnimatePresence } from "framer-motion";
 import { AIKeyDialog } from "@/components/AIKeyDialog";
@@ -32,15 +33,51 @@ interface CardForm {
 
 const DeckCreation = () => {
   const navigate = useNavigate();
-  const settings = loadSettings();
+  const location = useLocation();
+  const [settings, setSettings] = useState(loadSettings());
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [languagePair, setLanguagePair] = useState<{
+    id: string;
+    source: string;
+    target: string;
+  } | null>(() => {
+    // First try to get language pair from navigation state
+    const stateLanguagePair = location.state?.selectedLanguagePair;
+    if (stateLanguagePair) {
+      // If language pair was passed via navigation, also update settings
+      const updatedSettings = loadSettings();
+      updatedSettings.selectedLanguagePair = stateLanguagePair;
+      saveSettings(updatedSettings);
+      return stateLanguagePair;
+    }
+    // Fall back to settings if no language pair in navigation state
+    return settings.selectedLanguagePair || null;
+  });
   const [cardForms, setCardForms] = useState<CardForm[]>([
     { front: "", back: "" }
   ]);
   const [currentView, setCurrentView] = useState<"details" | "cards">("details");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showKeyDialog, setShowKeyDialog] = useState(false);
+
+  const handleLanguageSelect = (selectedPair: {
+    id: string;
+    source: string;
+    target: string;
+  }) => {
+    setLanguagePair(selectedPair);
+    
+    // Save language selection to settings
+    const updatedSettings = loadSettings();
+    updatedSettings.selectedLanguagePair = {
+      id: selectedPair.id,
+      source: selectedPair.source,
+      target: selectedPair.target
+    };
+    saveSettings(updatedSettings);
+    setSettings(updatedSettings);
+  };
 
   const addCard = () => {
     setCardForms([...cardForms, { front: "", back: "" }]);
@@ -69,8 +106,8 @@ const DeckCreation = () => {
       return;
     }
 
-    if (!settings.selectedLanguagePair) {
-      toast.error("No language pair selected. Please go back to the home screen and select a language pair.");
+    if (!languagePair) {
+      toast.error("Please select a language pair");
       return;
     }
 
@@ -78,7 +115,7 @@ const DeckCreation = () => {
   };
 
   const handleGenerateCards = async () => {
-    if (!settings.selectedLanguagePair) {
+    if (!languagePair) {
       toast.error("No language pair selected");
       return;
     }
@@ -108,17 +145,30 @@ const DeckCreation = () => {
       const newCards = await generateFlashcards(
         title,
         description,
-        settings.selectedLanguagePair.source,
-        settings.selectedLanguagePair.target,
+        languagePair.source,
+        languagePair.target,
         5, // Generate 5 cards
         existingCards // Pass existing cards to avoid duplicates
       );
 
-      // Add the new cards to the existing cards
-      setCardForms(prev => [...prev, ...newCards.map(card => ({
-        front: card.front,
-        back: card.back
-      }))]);
+      // Check if we have only one card and it's empty
+      const hasOnlyEmptyCard = cardForms.length === 1 && 
+                              !cardForms[0].front.trim() && 
+                              !cardForms[0].back.trim();
+
+      // If we have only one empty card, replace it with the AI-generated cards
+      // Otherwise, add the new cards to the existing cards
+      if (hasOnlyEmptyCard) {
+        setCardForms(newCards.map(card => ({
+          front: card.front,
+          back: card.back
+        })));
+      } else {
+        setCardForms(prev => [...prev, ...newCards.map(card => ({
+          front: card.front,
+          back: card.back
+        }))]);
+      }
 
       toast.success("Generated 5 new flashcards!");
     } catch (error) {
@@ -146,7 +196,7 @@ const DeckCreation = () => {
       return;
     }
 
-    if (!settings.selectedLanguagePair) {
+    if (!languagePair) {
       toast.error("No language pair selected");
       return;
     }
@@ -167,8 +217,8 @@ const DeckCreation = () => {
       id: deckId,
       title,
       description,
-      sourceLang: settings.selectedLanguagePair.source,
-      targetLang: settings.selectedLanguagePair.target,
+      sourceLang: languagePair.source,
+      targetLang: languagePair.target,
       cards,
       createdAt: Date.now(),
     };
@@ -229,17 +279,18 @@ const DeckCreation = () => {
                   />
                 </div>
                 
-                <div className="text-sm text-muted-foreground pt-2">
-                  <p className="font-medium">Language Pair</p>
-                  <p>
-                    {settings.selectedLanguagePair ? (
-                      `${settings.selectedLanguagePair.source} → ${settings.selectedLanguagePair.target}`
-                    ) : (
-                      <span className="text-red-500 flex items-center mt-1">
-                        <AlertCircle className="h-4 w-4 mr-1" /> No language pair selected
-                      </span>
-                    )}
-                  </p>
+                <div className="space-y-2">
+                  <Label htmlFor="languagePair">Language Pair</Label>
+                  <LanguageSelector 
+                    onSelect={handleLanguageSelect} 
+                    className="w-full"
+                    initialValue={languagePair}
+                  />
+                  {!languagePair && (
+                    <p className="text-sm text-red-500 flex items-center mt-1">
+                      <AlertCircle className="h-4 w-4 mr-1" /> Please select a language pair
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -302,25 +353,25 @@ const DeckCreation = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor={`card-front-${index}`}>
-                        Front ({settings.selectedLanguagePair?.source})
+                        Front ({languagePair?.source})
                       </Label>
                       <Input 
                         id={`card-front-${index}`} 
                         value={card.front} 
                         onChange={(e) => updateCard(index, "front", e.target.value)} 
-                        placeholder="e.g., Hello"
+                        placeholder={languagePair ? `e.g., ${getLanguageExample(languagePair.source, languagePair.target).front}` : "e.g., Front side"}
                       />
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor={`card-back-${index}`}>
-                        Back ({settings.selectedLanguagePair?.target})
+                        Back ({languagePair?.target})
                       </Label>
                       <Input 
                         id={`card-back-${index}`} 
                         value={card.back} 
                         onChange={(e) => updateCard(index, "back", e.target.value)} 
-                        placeholder="e.g., Hola"
+                        placeholder={languagePair ? `e.g., ${getLanguageExample(languagePair.source, languagePair.target).back}` : "e.g., Back side"}
                       />
                     </div>
                     
