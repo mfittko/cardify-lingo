@@ -32,8 +32,10 @@ export interface Settings {
   streak: number;
   lastStreakUpdate: number;
   totalCardsStudied: number;
+  lastStudyDate?: number;
   openAIKey?: string;
   elevenLabsKey?: string;
+  elevenLabsVoiceId?: string;
 }
 
 // Default settings
@@ -51,6 +53,17 @@ const STORAGE_KEYS = {
 
 // Load all decks from local storage
 export const loadDecks = (): Deck[] => {
+  try {
+    const decksJson = localStorage.getItem(STORAGE_KEYS.DECKS);
+    return decksJson ? JSON.parse(decksJson) : [];
+  } catch (error) {
+    console.error("Error loading decks from storage:", error);
+    return [];
+  }
+};
+
+// Alias for loadDecks to maintain compatibility
+export const loadAllDecks = (): Deck[] => {
   try {
     const decksJson = localStorage.getItem(STORAGE_KEYS.DECKS);
     return decksJson ? JSON.parse(decksJson) : [];
@@ -107,6 +120,23 @@ export const deleteDeck = (deckId: string): void => {
   } catch (error) {
     console.error(`Error deleting deck ${deckId} from storage:`, error);
   }
+};
+
+// Delete multiple decks
+export const deleteDecks = (deckIds: string[]): void => {
+  try {
+    let decks = loadDecks();
+    decks = decks.filter((deck) => !deckIds.includes(deck.id));
+    saveDecks(decks);
+  } catch (error) {
+    console.error(`Error deleting decks from storage:`, error);
+  }
+};
+
+// Get count of due cards in a deck
+export const getDueCardsCount = (cards: Card[]): number => {
+  const now = Date.now();
+  return cards.filter(card => card.dueDate <= now).length;
 };
 
 // Load user settings
