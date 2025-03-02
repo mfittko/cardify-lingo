@@ -131,17 +131,6 @@ export const loadDecks = (): Deck[] => {
   }
 };
 
-// Alias for loadDecks to maintain compatibility
-export const loadAllDecks = (): Deck[] => {
-  try {
-    const decksJson = localStorage.getItem(STORAGE_KEYS.DECKS);
-    return decksJson ? JSON.parse(decksJson) : [];
-  } catch (error) {
-    console.error("Error loading decks from storage:", error);
-    return [];
-  }
-};
-
 // Save all decks to local storage
 export const saveDecks = (decks: Deck[]): void => {
   try {
