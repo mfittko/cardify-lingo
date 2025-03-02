@@ -132,8 +132,7 @@ test.describe('Deck Edit', () => {
     
     // Wait for the "Next: Edit Cards" button to be stable
     await page.waitForSelector('button:has-text("Next: Edit Cards")');
-    await page.waitForTimeout(500); // Give the UI a moment to stabilize
-    
+    await page.waitForSelector('button:has-text("Next: Edit Cards"):not([disabled])'); // Wait for the button to be stable
     // Go to cards view using a more specific selector
     await page.getByRole('button', { name: 'Next: Edit Cards' }).click();
     
