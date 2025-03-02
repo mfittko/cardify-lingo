@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +33,7 @@ const languagePairs = [
   { id: "ja-en", source: "Japanese", target: "English" },
   { id: "zh-en", source: "Chinese", target: "English" },
   { id: "ko-en", source: "Korean", target: "English" },
+  { id: "de-es", source: "German", target: "Spanish" },
 ];
 
 interface LanguageSelectorProps {
