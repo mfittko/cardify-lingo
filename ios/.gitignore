@@ -48,6 +48,9 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 
+# Xcode project files that change frequently
+App/App.xcodeproj/project.pbxproj
+
 # Cordova plugins for Capacitor
 capacitor-cordova-ios-plugins/
 
