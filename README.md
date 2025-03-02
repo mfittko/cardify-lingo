@@ -60,6 +60,52 @@ This project is built with .
 - shadcn-ui
 - Tailwind CSS
 
+## Testing
+
+This project uses Playwright for end-to-end testing. The tests are located in the `tests` directory.
+
+### Running Tests Locally
+
+```sh
+# Install Playwright browsers
+npx playwright install
+
+# Run all tests
+npm test
+
+# Run tests in headed mode (with browser UI)
+npm run test:headed
+
+# Run tests in debug mode
+npm run test:debug
+
+# Run a specific test file
+npm run test:single -- tests/landing-page.spec.ts
+```
+
+### Continuous Integration
+
+This project is configured to run tests on CircleCI. The configuration is in the `.circleci/config.yml` file.
+
+To run tests in CI mode locally:
+
+```sh
+# Run tests in CI mode
+npm run test:ci:full
+```
+
+This will:
+- Run tests in headless mode
+- Generate JUnit XML reports for test insights
+- Create HTML reports for visual inspection
+- Set appropriate timeouts and retry settings for CI environments
+
+When tests run on CircleCI, the following artifacts are uploaded:
+- JUnit XML reports for test insights
+- HTML reports for visual inspection
+- Screenshots of failed tests
+- Trace files for debugging
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/660a78c1-d643-423c-8ff4-dc41ddfba944) and click on Share -> Publish.
