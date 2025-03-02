@@ -1,171 +1,193 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { 
+  Plus, 
+  Search, 
+  Flame, 
+  Bookmark,
+  Check,
+  ArrowRight
+} from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import DeckCard from "@/components/DeckCard";
-import { loadDecks, loadSettings, Deck } from "@/utils/storage";
-import { Plus, Flame, Award, BookOpen } from "lucide-react";
-import { getDueCards, getStudyStats } from "@/utils/spacedRepetition";
-import { motion } from "framer-motion";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  loadDecks,
+  deleteDeck,
+  updateStreak,
+  loadSettings,
+} from "@/utils/storage";
+import { getStudyStats } from "@/utils/spacedRepetition";
+import { format } from 'date-fns';
 
 const Dashboard = () => {
-  const [decks, setDecks] = useState<Deck[]>([]);
-  const [streakCount, setStreakCount] = useState(0);
-  const [totalStudied, setTotalStudied] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [decks, setDecks] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [streak, setStreak] = useState(0);
+  const [settings, setSettings] = useState(loadSettings());
 
   useEffect(() => {
-    // Load decks and settings
     const loadedDecks = loadDecks();
-    const settings = loadSettings();
-
     setDecks(loadedDecks);
-    setStreakCount(settings.streakCount);
-    setTotalStudied(settings.totalCardsStudied);
-    setIsLoading(false);
   }, []);
 
-  const getDueCounts = (deck: Deck) => {
-    const dueCards = getDueCards(deck.cards);
-    return dueCards.length;
+  useEffect(() => {
+    const currentStreak = updateStreak();
+    setStreak(currentStreak);
+    setSettings(loadSettings());
+  }, []);
+
+  const handleDeleteDeck = (deckId: string) => {
+    deleteDeck(deckId);
+    setDecks(decks.filter((deck) => deck.id !== deckId));
+    toast({
+      title: "Deck deleted",
+      description: "The deck has been successfully deleted.",
+    });
   };
 
-  const formatLastStudied = (timestamp?: number) => {
-    if (!timestamp) return "Never";
-    
-    const now = new Date();
-    const date = new Date(timestamp);
-    
-    // If the date is today
-    if (now.toDateString() === date.toDateString()) {
-      return "Today";
-    }
-    
-    // If the date is yesterday
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (yesterday.toDateString() === date.toDateString()) {
-      return "Yesterday";
-    }
-    
-    // Otherwise, use relative format
-    const days = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    if (days < 7) {
-      return `${days} days ago`;
-    }
-    
-    // For older dates, use a more standard format
-    return date.toLocaleDateString();
-  };
-
-  const calculateTotalDue = () => {
-    return decks.reduce((total, deck) => total + getDueCounts(deck), 0);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  const filteredDecks = decks.filter((deck) =>
+    deck.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="container max-w-4xl px-4 py-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">My Decks</h1>
-        <Button asChild size="sm">
-          <Link to="/create">
-            <Plus className="mr-2 h-4 w-4" /> New Deck
-          </Link>
+    <div className="container max-w-5xl px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back! Review your decks and track your progress.
+          </p>
+        </div>
+        <Button onClick={() => navigate("/create")}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Deck
         </Button>
       </div>
 
-      {/* Stats area */}
-      <motion.div 
-        className="p-6 bg-card border border-border rounded-xl shadow-sm"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <h2 className="text-xl font-medium mb-4">Your Progress</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center">
-            <div className="mr-4 h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-              <Flame className="h-5 w-5 text-orange-500" />
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center">
+              <Flame className="h-4 w-4 mr-2 text-orange-500" />
+              <div>
+                <h2 className="text-lg font-semibold">Current Streak</h2>
+                <p className="text-3xl font-bold">{streak} days</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Streak</p>
-              <p className="text-xl font-semibold">{streakCount} days</p>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <div className="mr-4 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Due Today</p>
-              <p className="text-xl font-semibold">{calculateTotalDue()} cards</p>
+            <div className="flex items-center">
+              <Bookmark className="h-4 w-4 mr-2 text-blue-500" />
+              <div>
+                <h2 className="text-lg font-semibold">Total Cards Studied</h2>
+                <p className="text-3xl font-bold">{settings.totalCardsStudied}</p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center">
-            <div className="mr-4 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-              <Award className="h-5 w-5 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Cards Studied</p>
-              <p className="text-xl font-semibold">{totalStudied} total</p>
-            </div>
-          </div>
+        </CardContent>
+      </Card>
+
+      <div className="mb-4">
+        <Input
+          type="search"
+          placeholder="Search decks..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {filteredDecks.length > 0 ? (
+        <div className="rounded-md border">
+          <Table>
+            <TableCaption>A list of your decks.</TableCaption>
+            <TableHead>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead className="text-right">Cards</TableHead>
+                <TableHead>Due</TableHead>
+                <TableHead>Last Studied</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredDecks.map((deck) => {
+                const stats = getStudyStats(deck.cards);
+                const lastStudiedDate = deck.lastStudied ? new Date(deck.lastStudied) : null;
+
+                return (
+                  <TableRow key={deck.id}>
+                    <TableCell className="font-medium">{deck.title}</TableCell>
+                    <TableCell className="text-right">{stats.totalCount}</TableCell>
+                    <TableCell>
+                      {stats.dueCount > 0 && (
+                        <Badge variant="destructive">
+                          {stats.dueCount} Due
+                        </Badge>
+                      )}
+                      {stats.newCount > 0 && (
+                        <Badge variant="secondary" className="ml-1">
+                          {stats.newCount} New
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {lastStudiedDate ? format(lastStudiedDate, 'MMM dd, yyyy') : 'Never'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => navigate(`/edit/${deck.id}`)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => navigate(`/study/${deck.id}`)}
+                      >
+                        Study <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteDeck(deck.id)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
-      </motion.div>
-
-      <Separator />
-
-      {decks.length === 0 ? (
-        <motion.div 
-          className="text-center py-12 space-y-6"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-        >
-          <div className="rounded-full h-20 w-20 bg-muted flex items-center justify-center mx-auto">
-            <BookOpen className="h-10 w-10 text-muted-foreground" />
-          </div>
-          <div>
-            <h3 className="text-xl font-medium">No decks yet</h3>
-            <p className="text-muted-foreground mt-1">
-              Create your first deck to start learning
-            </p>
-          </div>
-          <Button asChild>
-            <Link to="/create">
-              <Plus className="mr-2 h-4 w-4" /> Create Deck
-            </Link>
-          </Button>
-        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {decks.map((deck, index) => (
-            <motion.div
-              key={deck.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.4 }}
-            >
-              <DeckCard
-                id={deck.id}
-                title={deck.title}
-                description={deck.description}
-                cardCount={deck.cards.length}
-                dueCount={getDueCounts(deck)}
-                lastStudied={formatLastStudied(deck.lastStudied)}
-                sourceLang={deck.sourceLang}
-                targetLang={deck.targetLang}
-              />
-            </motion.div>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center space-y-4">
+            <Search className="h-10 w-10 text-muted-foreground" />
+            <h2 className="text-xl font-medium">No decks found</h2>
+            <p className="text-muted-foreground">
+              Create a new deck to start learning.
+            </p>
+            <Button onClick={() => navigate("/create")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Deck
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

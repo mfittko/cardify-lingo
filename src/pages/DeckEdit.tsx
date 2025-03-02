@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,15 @@ import {
   X, 
   AlertCircle, 
   Volume,
-  Image as ImageIcon
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { saveDeck, loadDeck, loadSettings } from "@/utils/storage";
 import { createCard } from "@/utils/spacedRepetition";
 import { motion, AnimatePresence } from "framer-motion";
+import { AIKeyDialog } from "@/components/AIKeyDialog";
+import { hasOpenAIKey, generateFlashcards } from "@/utils/aiService";
 
 interface CardForm {
   id: string;
@@ -38,6 +42,8 @@ const DeckEdit = () => {
   const [cardForms, setCardForms] = useState<CardForm[]>([]);
   const [currentView, setCurrentView] = useState<"details" | "cards">("details");
   const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showKeyDialog, setShowKeyDialog] = useState(false);
 
   // Load the deck data when the component mounts
   useEffect(() => {
@@ -108,6 +114,45 @@ const DeckEdit = () => {
     }
 
     setCurrentView("cards");
+  };
+
+  const handleGenerateCards = async () => {
+    if (!settings.selectedLanguagePair) {
+      toast.error("No language pair selected");
+      return;
+    }
+
+    if (!hasOpenAIKey()) {
+      setShowKeyDialog(true);
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const newCards = await generateFlashcards(
+        title,
+        description,
+        settings.selectedLanguagePair.source,
+        settings.selectedLanguagePair.target,
+        5 // Generate 5 cards
+      );
+
+      // Add the new cards to the existing cards
+      setCardForms(prev => [...prev, ...newCards.map(card => ({
+        id: card.id,
+        front: card.front,
+        back: card.back
+      }))]);
+
+      toast.success("Generated 5 new flashcards!");
+    } catch (error) {
+      console.error("Failed to generate flashcards:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to generate flashcards: ${errorMessage}`);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -276,9 +321,24 @@ const DeckEdit = () => {
           >
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-medium">Cards ({cardForms.length})</h2>
-              <Button variant="outline" size="sm" onClick={addCard}>
-                <Plus className="h-4 w-4 mr-2" /> Add Card
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateCards}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  Auto-Generate
+                </Button>
+                <Button variant="outline" size="sm" onClick={addCard}>
+                  <Plus className="h-4 w-4 mr-2" /> Add Card
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-4">
@@ -336,6 +396,12 @@ const DeckEdit = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AIKeyDialog 
+        open={showKeyDialog}
+        onOpenChange={setShowKeyDialog}
+        onKeySaved={handleGenerateCards}
+      />
     </div>
   );
 };
