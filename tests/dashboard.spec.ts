@@ -5,10 +5,10 @@ test.describe('Dashboard', () => {
     // Navigate to the landing page
     await page.goto('/');
     
-    // Select English → Spanish and continue to dashboard
+    // Select English → Spanish and go to dashboard
     await page.click('text=Select language pair...');
     await page.click('text=English → Spanish');
-    await page.click('text=Continue');
+    await page.click('text=View Dashboard');
     
     // Verify we're on the dashboard page
     await expect(page.locator('h1')).toContainText('Dashboard');

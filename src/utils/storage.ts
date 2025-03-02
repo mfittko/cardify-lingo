@@ -26,6 +26,7 @@ export interface Deck {
 
 export interface Settings {
   selectedLanguagePair?: {
+    id: string;
     source: string;
     target: string;
   };
