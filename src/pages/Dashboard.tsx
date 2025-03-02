@@ -51,7 +51,12 @@ const Dashboard = () => {
   };
 
   const handleCreateDeck = () => {
-    navigate("/create");
+    const settings = loadSettings();
+    navigate("/create", { 
+      state: { 
+        selectedLanguagePair: settings.selectedLanguagePair 
+      } 
+    });
   };
 
   const handleEditDeck = (deckId: string) => {

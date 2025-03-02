@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,7 @@ interface CardForm {
 
 const DeckCreation = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [settings, setSettings] = useState(loadSettings());
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -40,7 +41,19 @@ const DeckCreation = () => {
     id: string;
     source: string;
     target: string;
-  } | null>(settings.selectedLanguagePair || null);
+  } | null>(() => {
+    // First try to get language pair from navigation state
+    const stateLanguagePair = location.state?.selectedLanguagePair;
+    if (stateLanguagePair) {
+      // If language pair was passed via navigation, also update settings
+      const updatedSettings = loadSettings();
+      updatedSettings.selectedLanguagePair = stateLanguagePair;
+      saveSettings(updatedSettings);
+      return stateLanguagePair;
+    }
+    // Fall back to settings if no language pair in navigation state
+    return settings.selectedLanguagePair || null;
+  });
   const [cardForms, setCardForms] = useState<CardForm[]>([
     { front: "", back: "" }
   ]);
@@ -258,6 +271,7 @@ const DeckCreation = () => {
                   <LanguageSelector 
                     onSelect={handleLanguageSelect} 
                     className="w-full"
+                    initialValue={languagePair}
                   />
                   {!languagePair && (
                     <p className="text-sm text-red-500 flex items-center mt-1">

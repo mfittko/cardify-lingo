@@ -10,7 +10,7 @@ test.describe('Landing Page', () => {
     await expect(page.getByText('Master languages through the power of flashcards')).toBeVisible();
     
     // Verify the language selector is present
-    await expect(page.getByText('Select language pair...')).toBeVisible();
+    await expect(page.getByRole('combobox').first()).toBeVisible();
     
     // Verify the Create New Deck and View Dashboard buttons are present but disabled
     const createDeckButton = page.getByRole('button', { name: 'Create New Deck' });
@@ -26,13 +26,13 @@ test.describe('Landing Page', () => {
     await page.goto('/');
     
     // Click on the language pair dropdown
-    await page.click('text=Select language pair...');
+    await page.getByRole('combobox').first().click();
     
     // Verify the dropdown menu is visible - use a more specific selector
     await expect(page.getByPlaceholder('Search language pair...')).toBeVisible();
     
     // Select English → Spanish from the dropdown
-    await page.click('text=English → Spanish');
+    await page.getByRole('option', { name: 'English → Spanish' }).click();
     
     // Verify the selected language pair is displayed
     await expect(page.getByRole('combobox').first()).toContainText('English → Spanish');
@@ -49,8 +49,8 @@ test.describe('Landing Page', () => {
     await page.goto('/');
     
     // Select a language pair
-    await page.click('text=Select language pair...');
-    await page.click('text=English → Spanish');
+    await page.getByRole('combobox').first().click();
+    await page.getByRole('option', { name: 'English → Spanish' }).click();
     
     // Verify both options are available and enabled
     const createDeckButton = page.getByRole('button', { name: 'Create New Deck' });
@@ -68,8 +68,8 @@ test.describe('Landing Page', () => {
     await page.goto('/');
     
     // Select a language pair again
-    await page.click('text=Select language pair...');
-    await page.click('text=English → Spanish');
+    await page.getByRole('combobox').first().click();
+    await page.getByRole('option', { name: 'English → Spanish' }).click();
     
     // Test the View Dashboard button navigates to dashboard
     await page.getByRole('button', { name: 'View Dashboard' }).click();

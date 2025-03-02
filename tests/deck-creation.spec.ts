@@ -175,4 +175,33 @@ test.describe('Deck Creation', () => {
     // Verify we're back on the dashboard
     await expect(page.locator('h1')).toContainText('Dashboard');
   });
+
+  test('should pass language pair when navigating from landing page', async ({ page }) => {
+    // Navigate to the landing page
+    await page.goto('/');
+    
+    // Select a language pair
+    await page.getByRole('combobox').first().click();
+    await page.getByText('English → German').click();
+    
+    // Click Create New Deck button
+    await page.getByRole('button', { name: 'Create New Deck' }).click();
+    
+    // Verify we're on the deck creation page
+    await expect(page.locator('h2')).toContainText('Create New Deck');
+    
+    // Verify the language pair has been passed correctly
+    const languagePairSelector = page.getByRole('combobox').first();
+    await expect(languagePairSelector).toContainText('English → German');
+    
+    // Fill in the deck title
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'German Vocabulary');
+    
+    // Click Next: Add Cards
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
+    
+    // Verify the language labels show the correct languages
+    await expect(page.getByText('Front (English)')).toBeVisible();
+    await expect(page.getByText('Back (German)')).toBeVisible();
+  });
 });

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,7 @@ const Index = () => {
 
   const handleCreateDeck = () => {
     if (languagePair) {
-      navigate("/create");
+      navigate("/create", { state: { selectedLanguagePair: languagePair } });
     }
   };
 
