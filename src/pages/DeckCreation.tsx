@@ -91,12 +91,27 @@ const DeckCreation = () => {
     setIsGenerating(true);
 
     try {
+      // Convert cardForms to the Card format expected by generateFlashcards
+      const existingCards = cardForms.filter(card => card.front && card.back).map(card => ({
+        id: generateId(),
+        front: card.front,
+        back: card.back,
+        eFactor: 2.5,
+        interval: 0,
+        repetitions: 0,
+        dueDate: Date.now(),
+        lastReviewed: 0,
+        image: card.image,
+        audio: card.audio
+      }));
+
       const newCards = await generateFlashcards(
         title,
         description,
         settings.selectedLanguagePair.source,
         settings.selectedLanguagePair.target,
-        5 // Generate 5 cards
+        5, // Generate 5 cards
+        existingCards // Pass existing cards to avoid duplicates
       );
 
       // Add the new cards to the existing cards

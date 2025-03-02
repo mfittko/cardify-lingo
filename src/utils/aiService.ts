@@ -1,4 +1,3 @@
-
 import { Card } from "./storage";
 import { createCard } from "./spacedRepetition";
 
@@ -44,7 +43,8 @@ export const generateFlashcards = async (
   deckDescription: string,
   sourceLang: string,
   targetLang: string,
-  count: number = 5
+  count: number = 5,
+  existingCards: Card[] = []
 ): Promise<Card[]> => {
   const apiKey = getOpenAIKey();
   
@@ -52,12 +52,19 @@ export const generateFlashcards = async (
     throw new Error("OpenAI API key not found");
   }
 
+  // Create a list of existing cards to avoid duplicates
+  const existingCardsList = existingCards.length > 0 
+    ? `Avoid generating duplicates of these existing cards:
+${existingCards.map(card => `- Front: "${card.front}", Back: "${card.back}"`).join('\n')}`
+    : '';
+
   // Define prompt for generating flashcards
   const systemPrompt = `You are an expert language teacher and translator who creates high-quality, accurate flashcards for language learning.
 Generate ${count} flashcards for a deck titled "${deckTitle}" with the description "${deckDescription}".
 The flashcards should translate words or phrases from ${sourceLang} to ${targetLang}.
 Each flashcard should be useful, appropriate for language learners, and related to the deck's theme.
-Provide only educational, appropriate content suitable for high school students.`;
+Provide only educational, appropriate content suitable for high school students.
+${existingCardsList}`;
 
   const userPrompt = `Please generate ${count} flashcards for my language learning deck.
 Respond in the following JSON format only, with no additional text:
@@ -65,7 +72,8 @@ Respond in the following JSON format only, with no additional text:
   {"front": "word or phrase in ${sourceLang}", "back": "translation in ${targetLang}"},
   {"front": "another word or phrase", "back": "its translation"}
 ]
-The content should be relevant to the deck title "${deckTitle}" and description "${deckDescription}".`;
+The content should be relevant to the deck title "${deckTitle}" and description "${deckDescription}".
+Make sure to avoid duplicating any of the existing cards I've provided.`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
