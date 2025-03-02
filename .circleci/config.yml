@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   node: circleci/node@7.1.0
+  ruby: circleci/ruby@2.1.0
 
 jobs:
   test:
@@ -101,7 +102,96 @@ jobs:
           path: test-results/playwright/junit.xml
           destination: junit.xml
 
+  deploy-ios:
+    macos:
+      xcode: 15.2.0
+    resource_class: macos.m1.medium.gen1
+    steps:
+      - checkout
+      
+      # Set up Node.js
+      - node/install:
+          node-version: '18.20'
+      
+      # Install npm dependencies
+      - restore_cache:
+          keys:
+            - npm-deps-v1-{{ checksum "package-lock.json" }}
+            - npm-deps-v1-
+      
+      - run:
+          name: Install npm dependencies
+          command: npm install
+      
+      - save_cache:
+          key: npm-deps-v1-{{ checksum "package-lock.json" }}
+          paths:
+            - node_modules
+      
+      # Set up Ruby and Bundler
+      - ruby/install-deps
+      
+      # Build the web app
+      - run:
+          name: Build web app
+          command: npm run build
+      
+      # Add iOS platform if not exists
+      - run:
+          name: Add iOS platform
+          command: |
+            if [ ! -d "ios" ]; then
+              npx cap add ios
+            fi
+      
+      # Sync Capacitor
+      - run:
+          name: Sync Capacitor
+          command: npx cap sync ios
+      
+      # Set up code signing
+      - run:
+          name: Set up code signing
+          command: |
+            # Create a temporary keychain
+            KEYCHAIN_NAME="ios-build.keychain"
+            KEYCHAIN_PASSWORD="circleci"
+            
+            security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+            security default-keychain -s "$KEYCHAIN_NAME"
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+            security set-keychain-settings -t 3600 -l "$KEYCHAIN_NAME"
+            
+            # Import certificates
+            echo "$IOS_DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode > /tmp/distribution.p12
+            security import /tmp/distribution.p12 -k "$KEYCHAIN_NAME" -P "$IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" -A
+            
+            # Import provisioning profile
+            echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > /tmp/profile.mobileprovision
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+      
+      # Deploy to TestFlight using Fastlane
+      - run:
+          name: Deploy to TestFlight
+          command: |
+            cd ios/App
+            bundle exec fastlane beta
+      
+      # Clean up
+      - run:
+          name: Clean up keychain
+          command: |
+            security delete-keychain ios-build.keychain
+          when: always
+
 workflows:
   ci:
     jobs:
       - test
+      - deploy-ios:
+          requires:
+            - test
+          filters:
+            branches:
+              only: main

@@ -1,0 +1,69 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    setup_ci if ENV['CI']
+    
+    # Update code signing settings
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/App/App.xcodeproj",
+      team_id: ENV["APPLE_TEAM_ID"],
+      code_sign_identity: "iPhone Distribution",
+      profile_name: ENV["PROVISIONING_PROFILE_NAME"]
+    )
+    
+    # Build the app
+    build_app(
+      workspace: "ios/App/App.xcworkspace",
+      scheme: "App",
+      output_directory: "build",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          ENV["APP_BUNDLE_ID"] => ENV["PROVISIONING_PROFILE_NAME"]
+        }
+      }
+    )
+    
+    # Upload to TestFlight
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+  
+  desc "Build and upload to App Store"
+  lane :release do
+    setup_ci if ENV['CI']
+    
+    # Update code signing settings
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/App/App.xcodeproj",
+      team_id: ENV["APPLE_TEAM_ID"],
+      code_sign_identity: "iPhone Distribution",
+      profile_name: ENV["PROVISIONING_PROFILE_NAME"]
+    )
+    
+    # Build the app
+    build_app(
+      workspace: "ios/App/App.xcworkspace",
+      scheme: "App",
+      output_directory: "build",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          ENV["APP_BUNDLE_ID"] => ENV["PROVISIONING_PROFILE_NAME"]
+        }
+      }
+    )
+    
+    # Upload to App Store
+    upload_to_app_store(
+      skip_metadata: true,
+      skip_screenshots: true,
+      submit_for_review: false
+    )
+  end
+end 
