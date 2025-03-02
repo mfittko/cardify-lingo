@@ -112,15 +112,15 @@ const Dashboard = () => {
         <div className="rounded-md border">
           <Table>
             <TableCaption>A list of your decks.</TableCaption>
-            <thead>
+            <TableHead>
               <TableRow>
-                <TableHead className="w-1/4">Title</TableHead>
-                <TableHead className="text-center w-1/12">Cards</TableHead>
-                <TableHead className="w-1/6">Due</TableHead>
-                <TableHead className="w-1/6">Last Studied</TableHead>
-                <TableHead className="text-right w-1/4">Actions</TableHead>
+                <TableHead scope="col" className="w-1/4">Title</TableHead>
+                <TableHead scope="col" className="text-center w-1/12">Cards</TableHead>
+                <TableHead scope="col" className="w-1/6">Due</TableHead>
+                <TableHead scope="col" className="w-1/6">Last Studied</TableHead>
+                <TableHead scope="col" className="text-right w-1/4">Actions</TableHead>
               </TableRow>
-            </thead>
+            </TableHead>
             <TableBody>
               {filteredDecks.map((deck) => {
                 const stats = getStudyStats(deck.cards);
@@ -188,7 +188,7 @@ const Dashboard = () => {
             </p>
             <Button onClick={() => navigate("/create")}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Deck
+              Create New Deck
             </Button>
           </CardContent>
         </Card>
