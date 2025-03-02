@@ -9,10 +9,15 @@ test.describe('Deck Edit', () => {
     await page.click('text=Select language pair...');
     await page.click('text=English → Spanish');
     await page.click('text=Continue');
+  });
+
+  test('should display current deck information', async ({ page }) => {
+    // Create a unique test deck
+    const deckName = `Display Info Deck ${Date.now()}`;
     
-    // Always create a new test deck for editing
+    // Create a new test deck for editing
     await page.click('text=Create Deck');
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Edit Test Deck');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
     
     // Add first card
@@ -23,16 +28,14 @@ test.describe('Deck Edit', () => {
     await page.click('text=Create Deck');
     
     // Wait for the dashboard to load with the new deck
-    await expect(page.getByText('Edit Test Deck')).toBeVisible();
+    await expect(page.getByText(deckName)).toBeVisible();
     
     // Click the Edit button on the deck we just created
-    await page.getByText('Edit Test Deck').first().locator('xpath=ancestor::tr').getByRole('button', { name: 'Edit' }).click();
+    await page.getByText(deckName).first().locator('xpath=ancestor::tr').getByRole('button', { name: 'Edit' }).click();
     
     // Verify we're on the edit page
     await expect(page.getByText('Edit Deck')).toBeVisible();
-  });
-
-  test('should display current deck information', async ({ page }) => {
+    
     // Verify the deck title is displayed
     const titleInput = page.getByLabel('Deck Title');
     await expect(titleInput).toBeVisible();
@@ -52,6 +55,30 @@ test.describe('Deck Edit', () => {
   });
 
   test('should allow editing deck title', async ({ page }) => {
+    // Create a unique test deck
+    const deckName = `Edit Title Deck ${Date.now()}`;
+    
+    // Create a new test deck for editing
+    await page.click('text=Create Deck');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.click('text=Next: Add Cards');
+    
+    // Add first card
+    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
+    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    
+    // Create the deck
+    await page.click('text=Create Deck');
+    
+    // Wait for the dashboard to load with the new deck
+    await expect(page.getByText(deckName)).toBeVisible();
+    
+    // Click the Edit button on the deck we just created
+    await page.getByText(deckName).first().locator('xpath=ancestor::tr').getByRole('button', { name: 'Edit' }).click();
+    
+    // Verify we're on the edit page
+    await expect(page.getByText('Edit Deck')).toBeVisible();
+    
     // Get the current title
     const titleInput = page.getByLabel('Deck Title');
     const currentTitle = await titleInput.inputValue();
@@ -73,6 +100,33 @@ test.describe('Deck Edit', () => {
   });
 
   test('should allow adding new cards', async ({ page }) => {
+    // Set a longer timeout for this test
+    test.setTimeout(15000);
+    
+    // Create a unique test deck
+    const deckName = `Add Cards Deck ${Date.now()}`;
+    
+    // Create a new test deck for editing
+    await page.click('text=Create Deck');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.click('text=Next: Add Cards');
+    
+    // Add first card
+    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
+    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    
+    // Create the deck
+    await page.click('text=Create Deck');
+    
+    // Wait for the dashboard to load with the new deck
+    await expect(page.getByText(deckName)).toBeVisible();
+    
+    // Click the Edit button on the deck we just created
+    await page.getByText(deckName).first().locator('xpath=ancestor::tr').getByRole('button', { name: 'Edit' }).click();
+    
+    // Verify we're on the edit page
+    await expect(page.getByText('Edit Deck')).toBeVisible();
+    
     // Wait for the page to be fully loaded
     await page.waitForLoadState('networkidle');
     
@@ -153,6 +207,41 @@ test.describe('Deck Edit', () => {
   });
 
   test('should allow removing cards', async ({ page }) => {
+    // Set a longer timeout for this test
+    test.setTimeout(15000);
+    
+    // Create a unique test deck
+    const deckName = `Remove Cards Deck ${Date.now()}`;
+    
+    // Create a new test deck for editing
+    await page.click('text=Create Deck');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.click('text=Next: Add Cards');
+    
+    // Add first card
+    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
+    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    
+    // Add second card
+    await page.click('text=Add Card');
+    await page.waitForSelector('text=Card 2');
+    const frontInputs = await page.locator('input[placeholder="e.g., Hello"]').all();
+    const backInputs = await page.locator('input[placeholder="e.g., Hola"]').all();
+    await frontInputs[1].fill('Thank you');
+    await backInputs[1].fill('Gracias');
+    
+    // Create the deck
+    await page.click('text=Create Deck');
+    
+    // Wait for the dashboard to load with the new deck
+    await expect(page.getByText(deckName)).toBeVisible();
+    
+    // Click the Edit button on the deck we just created
+    await page.getByText(deckName).first().locator('xpath=ancestor::tr').getByRole('button', { name: 'Edit' }).click();
+    
+    // Verify we're on the edit page
+    await expect(page.getByText('Edit Deck')).toBeVisible();
+    
     // Wait for the page to be fully loaded
     await page.waitForLoadState('networkidle');
     
@@ -167,33 +256,13 @@ test.describe('Deck Edit', () => {
     await page.waitForSelector('text=Cards');
     await page.waitForTimeout(500); // Give the UI a moment to stabilize
     
-    // Make sure we have at least two cards
     // Get the current number of cards
     const initialCardText = await page.getByText(/Cards \(\d+\)/).textContent();
     const initialCardCount = initialCardText ? parseInt(initialCardText.match(/\d+/)![0]) : 0;
     
-    if (initialCardCount < 2) {
-      // Add a card if we only have one
-      await page.getByRole('button', { name: 'Add Card' }).click();
-      
-      // Wait for the new card to be added
-      await page.waitForTimeout(500); // Small delay to ensure UI updates
-      
-      // Fill in the new card
-      const frontInputs = await page.getByPlaceholder('e.g., Hello').all();
-      const backInputs = await page.getByPlaceholder('e.g., Hola').all();
-      
-      await frontInputs[initialCardCount].fill('Good night');
-      await backInputs[initialCardCount].fill('Buenas noches');
-    }
-    
-    // Get the updated card count
-    const updatedCardText = await page.getByText(/Cards \(\d+\)/).textContent();
-    const updatedCardCount = updatedCardText ? parseInt(updatedCardText.match(/\d+/)![0]) : 0;
-    
     // Click the remove button on the last card
     const removeButtons = await page.getByRole('button', { name: 'Remove card' }).all();
-    await removeButtons[updatedCardCount - 1].click();
+    await removeButtons[initialCardCount - 1].click();
     
     // Wait for the card to be removed
     await page.waitForTimeout(500); // Small delay to ensure UI updates
@@ -201,7 +270,7 @@ test.describe('Deck Edit', () => {
     // Verify the card was removed
     const finalCardText = await page.getByText(/Cards \(\d+\)/).textContent();
     const finalCardCount = finalCardText ? parseInt(finalCardText.match(/\d+/)![0]) : 0;
-    expect(finalCardCount).toBe(updatedCardCount - 1);
+    expect(finalCardCount).toBe(initialCardCount - 1);
     
     // Save changes
     await page.getByRole('button', { name: 'Save Changes' }).click();
@@ -235,10 +304,34 @@ test.describe('Deck Edit', () => {
     // Verify the card count
     const verificationCardText = await page.getByText(/Cards \(\d+\)/).textContent();
     const verificationCardCount = verificationCardText ? parseInt(verificationCardText.match(/\d+/)![0]) : 0;
-    expect(verificationCardCount).toBe(updatedCardCount - 1);
+    expect(verificationCardCount).toBe(initialCardCount - 1);
   });
 
   test('should validate card content before saving', async ({ page }) => {
+    // Create a unique test deck
+    const deckName = `Validate Cards Deck ${Date.now()}`;
+    
+    // Create a new test deck for editing
+    await page.click('text=Create Deck');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.click('text=Next: Add Cards');
+    
+    // Add first card
+    await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
+    await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
+    
+    // Create the deck
+    await page.click('text=Create Deck');
+    
+    // Wait for the dashboard to load with the new deck
+    await expect(page.getByText(deckName)).toBeVisible();
+    
+    // Click the Edit button on the deck we just created
+    await page.getByText(deckName).first().locator('xpath=ancestor::tr').getByRole('button', { name: 'Edit' }).click();
+    
+    // Verify we're on the edit page
+    await expect(page.getByText('Edit Deck')).toBeVisible();
+    
     // Go to cards view
     await page.click('text=Next: Edit Cards');
     
