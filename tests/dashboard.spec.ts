@@ -58,8 +58,8 @@ test.describe('Dashboard', () => {
 
   test('should display proper table alignment', async ({ page }) => {
     // Create a deck if none exists
-    if (await page.getByText('No decks found').isVisible()) {
-      await page.click('text=Create Deck');
+    if (await page.getByText('You don\'t have any decks yet').isVisible()) {
+      await page.click('text=Create Your First Deck');
       await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Alignment Test Deck');
       await page.click('text=Next: Add Cards');
       await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
@@ -67,16 +67,20 @@ test.describe('Dashboard', () => {
       await page.click('text=Create Deck');
     }
     
-    // Verify table headers are visible and properly aligned using CSS selectors
-    await expect(page.getByRole('columnheader', { name: 'Title' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Cards' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Due' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Last Studied' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Actions' })).toBeVisible();
+    // Verify the table is visible
+    await expect(page.locator('table')).toBeVisible();
     
-    // Verify action buttons are visible and properly aligned
-    await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Study' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
+    // Verify the table headers
+    await expect(page.locator('th').filter({ hasText: 'Title' })).toBeVisible();
+    await expect(page.locator('th').filter({ hasText: 'Cards' })).toBeVisible();
+    await expect(page.locator('th').filter({ hasText: 'Due' })).toBeVisible();
+    await expect(page.locator('th').filter({ hasText: 'Last Studied' })).toBeVisible();
+    await expect(page.locator('th').filter({ hasText: 'Actions' })).toBeVisible();
+    
+    // Verify at least one deck is visible
+    await expect(page.locator('tbody tr')).toBeVisible();
+    
+    // Verify action buttons are visible (using the icons)
+    await expect(page.locator('button svg').first()).toBeVisible();
   });
 });

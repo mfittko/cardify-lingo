@@ -1,9 +1,9 @@
-
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Volume } from "lucide-react";
 import { toast } from "sonner";
+import { loadSettings } from "@/utils/storage";
 
 interface FlashCardProps {
   front: string;
@@ -48,8 +48,9 @@ const FlashCard = ({
       });
     } else {
       // Use ElevenLabs for text-to-speech
-      const settings = JSON.parse(localStorage.getItem("lingua_settings") || "{}");
+      const settings = loadSettings();
       const elevenLabsKey = settings.elevenLabsKey;
+      const voiceId = settings.elevenLabsVoiceId || "EXAVITQu4vr4xnSDxMaL"; // Use default if not set
       
       if (!elevenLabsKey) {
         toast.error("Please add your ElevenLabs API key in settings");
@@ -59,7 +60,7 @@ const FlashCard = ({
       setIsSpeaking(true);
       
       // Use ElevenLabs API to convert text to speech
-      fetch("https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL/stream", {
+      fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +72,9 @@ const FlashCard = ({
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75
-          }
+          },
+          pronunciation_dictionary_locators: [],
+          text_language: language
         })
       })
       .then(response => {

@@ -213,11 +213,14 @@ test.describe('Study Mode', () => {
     
     // Verify the total cards studied counter is updated
     await expect(page.getByText('Total Cards Studied')).toBeVisible();
-    const totalStudiedText = await page.locator('text=Total Cards Studied').locator('xpath=..').textContent();
+    
+    // Get the total studied count directly from the element that contains it
+    const totalStudiedElement = await page.locator('text=Total Cards Studied').locator('xpath=../..').locator('.text-2xl');
+    const totalStudiedText = await totalStudiedElement.textContent();
     
     // Make sure we have a valid text before parsing
     if (totalStudiedText) {
-      const totalStudied = parseInt(totalStudiedText.replace(/\D/g, ''));
+      const totalStudied = parseInt(totalStudiedText.trim());
       expect(totalStudied).toBeGreaterThan(0);
     }
   });
