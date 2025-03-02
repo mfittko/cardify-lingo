@@ -88,15 +88,6 @@ export default function Index() {
           </CardContent>
         </Card>
       </motion.div>
-      
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-        className="mt-10 text-sm text-indigo-600"
-      >
-        Optimized for both desktop and mobile devices
-      </motion.div>
     </div>
   );
 }
