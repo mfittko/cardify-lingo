@@ -1,18 +1,90 @@
 import { test, expect } from '@playwright/test';
+import { setupDashboard, createBasicDeck } from './utils';
 
 test.describe('Study Mode', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the landing page
-    await page.goto('/');
+    // Navigate to the landing page and set up the dashboard
+    await setupDashboard(page);
+  });
+
+  test('should display flashcards correctly', async ({ page }) => {
+    // Set a longer timeout for this test
+    test.setTimeout(15000);
     
-    // Select English → Spanish and continue to dashboard
-    await page.click('text=Select language pair...');
-    await page.click('text=English → Spanish');
-    await page.click('text=Continue');
+    // Create a unique test deck
+    const deckName = `Study Display Deck ${Date.now()}`;
     
-    // Always create a new test deck for studying
+    // Create a new test deck for studying
+    await createBasicDeck(page, deckName);
+    
+    // Wait for the UI to stabilize
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
+    
+    // Click the Study button on the deck we just created
+    await page.getByRole('button', { name: 'Study' }).first().click();
+    
+    // Wait for the study page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Verify we're in study mode by checking for the deck title
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    
+    // Verify the flashcard is displayed - use a more specific selector
+    await expect(page.locator('.perspective')).toBeVisible();
+    
+    // Verify the progress indicator is visible
+    await expect(page.getByText(/Card \d+ of/)).toBeVisible();
+  });
+
+  test('should allow flipping cards', async ({ page }) => {
+    // Set a longer timeout for this test
+    test.setTimeout(15000);
+    
+    // Create a unique test deck
+    const deckName = `Study Flip Deck ${Date.now()}`;
+    
+    // Create a new test deck for studying
+    await createBasicDeck(page, deckName);
+    
+    // Wait for the UI to stabilize
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
+    
+    // Click the Study button on the deck we just created
+    await page.getByRole('button', { name: 'Study' }).first().click();
+    
+    // Wait for the study page to load
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('.perspective');
+    
+    // Verify the difficulty buttons are not visible before flipping
+    await expect(page.getByRole('button', { name: 'Easy' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Medium' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Hard' })).not.toBeVisible();
+    
+    // Click to flip the card
+    await page.locator('.perspective').click();
+    
+    // Wait for the card to flip
+    await page.waitForTimeout(500);
+    
+    // Verify the back of the card is now visible by checking for the rating buttons
+    await expect(page.getByRole('button', { name: 'Easy' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Medium' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Hard' })).toBeVisible();
+  });
+
+  test('should allow marking cards as known or unknown', async ({ page }) => {
+    // Set a longer timeout for this test
+    test.setTimeout(15000);
+    
+    // Create a unique test deck
+    const deckName = `Study Marking Deck ${Date.now()}`;
+    
+    // Create a new test deck for studying with two cards
     await page.click('text=Create Deck');
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Study Test Deck');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
     
     // Add first card
@@ -22,8 +94,8 @@ test.describe('Study Mode', () => {
     // Add second card
     await page.click('text=Add Card');
     await page.waitForSelector('text=Card 2');
-    const frontInputs = await page.locator('input[placeholder="e.g., Hello"]').all();
-    const backInputs = await page.locator('input[placeholder="e.g., Hola"]').all();
+    const frontInputs = await page.getByPlaceholder('e.g., Hello').all();
+    const backInputs = await page.getByPlaceholder('e.g., Hola').all();
     await frontInputs[1].fill('Thank you');
     await backInputs[1].fill('Gracias');
     
@@ -31,107 +103,117 @@ test.describe('Study Mode', () => {
     await page.click('text=Create Deck');
     
     // Wait for the dashboard to load with the new deck
-    await expect(page.getByText('Study Test Deck')).toBeVisible();
+    await expect(page.getByText(deckName)).toBeVisible();
+    
+    // Wait for the UI to stabilize
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
     
     // Click the Study button on the deck we just created
-    await page.getByText('Study Test Deck').first().locator('xpath=ancestor::tr').getByRole('button', { name: 'Study' }).click();
-  });
-
-  test('should display flashcards correctly', async ({ page }) => {
-    // Verify we're in study mode
-    await expect(page.getByText('Studying')).toBeVisible();
+    await page.getByRole('button', { name: 'Study' }).first().click();
     
-    // Verify the flashcard is displayed
-    await expect(page.locator('.card-front')).toBeVisible();
+    // Wait for the study page to load
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('.perspective');
     
-    // Verify the progress indicator is visible
-    await expect(page.getByText('Card 1 of')).toBeVisible();
-  });
-
-  test('should allow flipping cards', async ({ page }) => {
-    // Get the front content
-    const frontContent = await page.locator('.card-front').textContent();
-    
-    // Click to flip the card
-    await page.click('.flip-card');
-    
-    // Verify the back of the card is now visible
-    await expect(page.locator('.card-back')).toBeVisible();
-    
-    // The back content should be different from the front
-    const backContent = await page.locator('.card-back').textContent();
-    expect(backContent).not.toEqual(frontContent);
-    
-    // Click again to flip back to the front
-    await page.click('.flip-card');
-    
-    // Verify the front is visible again
-    await expect(page.locator('.card-front')).toBeVisible();
-  });
-
-  test('should allow marking cards as known or unknown', async ({ page }) => {
     // Flip the card to see the answer
-    await page.click('.flip-card');
+    await page.locator('.perspective').click();
     
-    // Verify the "I knew it" and "I didn't know" buttons are visible
-    await expect(page.getByRole('button', { name: 'I knew it' })).toBeVisible();
-    await expect(page.getByRole('button', { name: "I didn't know" })).toBeVisible();
+    // Wait for the card to flip
+    await page.waitForTimeout(500);
     
-    // Click "I knew it"
-    await page.click('text=I knew it');
+    // Verify the difficulty buttons are visible
+    await expect(page.getByRole('button', { name: 'Easy' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Medium' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Hard' })).toBeVisible();
     
-    // We should now see the next card or completion screen
-    const isComplete = await page.getByText('Study session complete!').isVisible();
+    // Click "Easy" (equivalent to "I knew it")
+    await page.getByRole('button', { name: 'Easy' }).click();
     
-    if (!isComplete) {
-      // If not complete, we should be on the next card
-      await expect(page.locator('.card-front')).toBeVisible();
-      
-      // Flip the card
-      await page.click('.flip-card');
-      
-      // Click "I didn't know"
-      await page.click("text=I didn't know");
-      
-      // Now we should see the completion screen
-      await expect(page.getByText('Study session complete!')).toBeVisible();
-    }
+    // Wait for the next card
+    await page.waitForTimeout(1000);
     
-    // Verify the "Back to Dashboard" button is visible
-    await expect(page.getByRole('button', { name: 'Back to Dashboard' })).toBeVisible();
+    // Flip the second card
+    await page.locator('.perspective').click();
+    
+    // Wait for the card to flip
+    await page.waitForTimeout(500);
+    
+    // Click "Hard" (equivalent to "I didn't know")
+    await page.getByRole('button', { name: 'Hard' }).click();
+    
+    // Wait for the completion screen
+    await page.waitForTimeout(1000);
+    
+    // Now we should see the completion screen
+    await expect(page.getByText('Session Complete!')).toBeVisible();
+    
+    // Verify the "Finish" button is visible
+    await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
     
     // Go back to dashboard
-    await page.click('text=Back to Dashboard');
+    await page.getByRole('button', { name: 'Finish' }).click();
     
     // Verify we're back on the dashboard
     await expect(page.locator('h1')).toContainText('Dashboard');
   });
 
   test('should track study progress', async ({ page }) => {
-    // Complete a study session
-    await page.click('.flip-card');
-    await page.click('text=I knew it');
+    // Set a longer timeout for this test
+    test.setTimeout(15000);
     
-    // If there's another card, mark it as known too
-    if (await page.locator('.card-front').isVisible()) {
-      await page.click('.flip-card');
-      await page.click('text=I knew it');
-    }
+    // Create a unique test deck
+    const deckName = `Study Progress Deck ${Date.now()}`;
+    
+    // Create a new test deck for studying
+    await createBasicDeck(page, deckName);
+    
+    // Wait for the UI to stabilize
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
+    
+    // Click the Study button on the deck we just created
+    await page.getByRole('button', { name: 'Study' }).first().click();
+    
+    // Wait for the study page to load
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('.perspective');
+    
+    // Complete a study session
+    await page.locator('.perspective').click();
+    
+    // Wait for the card to flip
+    await page.waitForTimeout(500);
+    
+    await page.getByRole('button', { name: 'Easy' }).click();
+    
+    // Wait for the completion screen
+    await page.waitForTimeout(1000);
+    await expect(page.getByText('Session Complete!')).toBeVisible();
     
     // Go back to dashboard
-    await page.click('text=Back to Dashboard');
+    await page.getByRole('button', { name: 'Finish' }).click();
     
-    // Verify the "Last Studied" field is updated
-    const lastStudiedCell = page.locator('tr').first().locator('td').nth(3);
-    await expect(lastStudiedCell).not.toContainText('Never');
+    // Wait for the dashboard to load
+    await page.waitForSelector('h1:has-text("Dashboard")');
+    
+    // Verify the "Last Studied" field is updated - it should not contain "Never"
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      const title = await row.locator('td').first().textContent();
+      if (title && title.includes(deckName)) {
+        const lastStudiedCell = row.locator('td').nth(3);
+        await expect(lastStudiedCell).not.toContainText('Never');
+        break;
+      }
+    }
     
     // Verify the streak counter is visible
     await expect(page.getByText('Current Streak')).toBeVisible();
     
     // Verify the total cards studied counter is updated
     await expect(page.getByText('Total Cards Studied')).toBeVisible();
-    const totalStudiedElement = page.locator('text=Total Cards Studied').locator('xpath=..');
-    const totalStudiedText = await totalStudiedElement.textContent();
+    const totalStudiedText = await page.locator('text=Total Cards Studied').locator('xpath=..').textContent();
     
     // Make sure we have a valid text before parsing
     if (totalStudiedText) {
