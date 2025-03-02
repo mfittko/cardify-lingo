@@ -8,6 +8,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -72,8 +73,9 @@ const LanguageSelector = ({ onSelect, className }: LanguageSelectorProps) => {
       <PopoverContent className="w-[300px] p-0">
         <Command>
           <CommandInput placeholder="Search language pair..." />
-          <CommandEmpty>No language pair found.</CommandEmpty>
-          <CommandGroup className="max-h-60 overflow-y-auto">
+          <CommandList>
+            <CommandEmpty>No language pair found.</CommandEmpty>
+            <CommandGroup className="max-h-60 overflow-y-auto">
             {languagePairs.map((pair) => (
               <CommandItem
                 key={pair.id}
@@ -86,7 +88,8 @@ const LanguageSelector = ({ onSelect, className }: LanguageSelectorProps) => {
                 {pair.source} → {pair.target}
               </CommandItem>
             ))}
-          </CommandGroup>
+            </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>

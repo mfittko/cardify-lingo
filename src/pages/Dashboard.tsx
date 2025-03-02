@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import DeckCard from "@/components/DeckCard";
 import { loadDecks, loadSettings, Deck } from "@/utils/storage";
-import { Plus, Fire, Award, BookOpen } from "lucide-react";
+import { Plus, Flame, Award, BookOpen } from "lucide-react";
 import { getDueCards, getStudyStats } from "@/utils/spacedRepetition";
 import { motion } from "framer-motion";
 
@@ -92,7 +92,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center">
             <div className="mr-4 h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-              <Fire className="h-5 w-5 text-orange-500" />
+              <Flame className="h-5 w-5 text-orange-500" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Streak</p>
