@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Settings as SettingsIcon, BookOpen, Calendar, BarChart, Clock, Trash2, Edit, Search } from "lucide-react";
-import { loadAllDecks, loadSettings, deleteDecks, getDueCardsCount, type Deck } from "@/utils/storage";
+import { loadDecks, loadSettings, deleteDecks, getDueCardsCount, type Deck } from "@/utils/storage";
 import { getDueCards } from "@/utils/spacedRepetition";
 import { formatDistanceToNow } from "date-fns";
 import { SettingsDialog } from "@/components/SettingsDialog";
@@ -31,7 +31,7 @@ const Dashboard = () => {
     setIsLoading(true);
     
     // Load decks
-    const allDecks = loadAllDecks();
+    const allDecks = loadDecks();
     
     // Sort decks by last studied date (most recent first)
     allDecks.sort((a, b) => {

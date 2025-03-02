@@ -11,23 +11,33 @@ import { NotificationSettings } from './NotificationSettings';
 
 interface SettingsDialogProps {
   children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function SettingsDialog({ children }: SettingsDialogProps) {
+export function SettingsDialog({ children, open, onOpenChange }: SettingsDialogProps) {
   const [openAIKey, setOpenAIKey] = useState('');
   const [elevenLabsKey, setElevenLabsKey] = useState('');
   const [elevenLabsVoiceId, setElevenLabsVoiceId] = useState('');
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
 
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
+  const isControlled = open !== undefined && onOpenChange !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
       // Load settings when dialog opens
       const settings = loadSettings();
       setOpenAIKey(settings.openAIKey || '');
       setElevenLabsKey(settings.elevenLabsKey || '');
       setElevenLabsVoiceId(settings.elevenLabsVoiceId || '');
     }
-    setOpen(open);
+    
+    if (isControlled) {
+      onOpenChange(newOpen);
+    } else {
+      setInternalOpen(newOpen);
+    }
   };
 
   const saveApiKeys = () => {
@@ -39,11 +49,15 @@ export function SettingsDialog({ children }: SettingsDialogProps) {
       elevenLabsVoiceId,
     };
     saveSettings(updatedSettings);
-    setOpen(false);
+    if (isControlled) {
+      onOpenChange(false);
+    } else {
+      setInternalOpen(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children || (
           <Button variant="outline" size="icon">
