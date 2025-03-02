@@ -7,13 +7,12 @@ export async function setupDashboard(page: Page): Promise<void> {
   // Navigate to the landing page
   await page.goto('/');
   
-  // Select English → Spanish and view dashboard
-  await page.click('text=Select language pair...');
-  await page.click('text=English → Spanish');
-  await page.click('text=View Dashboard');
+  // Click the Continue button to go to dashboard
+  await page.getByRole('button', { name: 'Continue' }).click();
   
-  // Verify we're on the dashboard page
-  await expect(page.locator('h1')).toContainText('Dashboard');
+  // Verify we're on the dashboard page - look for the Logo component or "Cardify Lingo" text
+  // instead of the h1 with "Dashboard" text that was replaced
+  await expect(page.getByText('Cardify Lingo')).toBeVisible();
 }
 
 /**
@@ -43,7 +42,7 @@ export async function createBasicDeck(page: Page, deckName: string): Promise<voi
   await page.click('text=Create Deck');
   
   // Verify we're back on the dashboard
-  await expect(page.locator('h1')).toContainText('Dashboard');
+  await expect(page.getByText('Cardify Lingo')).toBeVisible();
   
   // Verify the new deck is displayed
   await expect(page.getByText(deckName)).toBeVisible();

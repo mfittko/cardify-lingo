@@ -2,20 +2,10 @@ import { test, expect } from '@playwright/test';
 import { setupDashboard, fillCardByIndex } from './utils';
 
 test.describe('Dashboard', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to the landing page
-    await page.goto('/');
-    
-    // Select English → Spanish and go to dashboard
-    await page.click('text=Select language pair...');
-    await page.click('text=English → Spanish');
-    await page.click('text=View Dashboard');
-    
-    // Verify we're on the dashboard page
-    await expect(page.locator('h1')).toContainText('Dashboard');
-  });
-
   test('should display dashboard elements correctly', async ({ page }) => {
+    // Setup dashboard
+    await setupDashboard(page);
+    
     // Verify dashboard UI elements
     await expect(page.getByText('Current Streak')).toBeVisible();
     await expect(page.getByText('Total Cards Studied')).toBeVisible();
@@ -28,6 +18,9 @@ test.describe('Dashboard', () => {
   });
 
   test('should allow creating a new deck', async ({ page }) => {
+    // Setup dashboard
+    await setupDashboard(page);
+    
     // Click the Create Deck button
     await page.click('text=Create Deck');
     
@@ -50,25 +43,44 @@ test.describe('Dashboard', () => {
     await page.click('text=Create Deck');
     
     // Verify we're back on the dashboard
-    await expect(page.locator('h1')).toContainText('Dashboard');
+    await expect(page.getByText('Cardify Lingo')).toBeVisible();
     
     // Verify the new deck is displayed
     await expect(page.getByText('Test Deck')).toBeVisible();
   });
 
   test('should display proper table alignment', async ({ page }) => {
-    // Create a deck if none exists
-    if (await page.getByText('You don\'t have any decks yet').isVisible()) {
-      await page.click('text=Create Your First Deck');
-      await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Alignment Test Deck');
-      await page.click('text=Next: Add Cards');
-      await page.fill('input[placeholder="e.g., Hello"]', 'Hello');
-      await page.fill('input[placeholder="e.g., Hola"]', 'Hola');
-      await page.click('text=Create Deck');
-    }
+    // Setup dashboard
+    await setupDashboard(page);
+    
+    // Create a deck to ensure we have content to display
+    const deckName = `Alignment Test Deck ${Date.now()}`;
+    
+    // Click the Create Deck button
+    await page.getByRole('button', { name: 'Create Deck' }).first().click();
+    
+    // Fill in the deck title
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    
+    // Click Next: Add Cards
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
+    
+    // Add a card
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
+    
+    // Create the deck
+    await page.getByRole('button', { name: 'Create Deck' }).click();
+    
+    // Wait for the dashboard to load with the new deck
+    await expect(page.getByText('Current Streak')).toBeVisible();
+    await expect(page.getByText('Cards Due Today')).toBeVisible();
+    await expect(page.getByText(deckName)).toBeVisible();
+    
+    // Make sure we're on the "All Decks" tab to see the table
+    await page.getByRole('tab', { name: 'All Decks' }).click();
     
     // Verify the table is visible
-    await expect(page.locator('table')).toBeVisible();
+    await expect(page.locator('[data-testid="decks-table"]')).toBeVisible();
     
     // Verify the table headers
     await expect(page.locator('th').filter({ hasText: 'Title' })).toBeVisible();

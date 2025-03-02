@@ -38,82 +38,76 @@ const languagePairs = [
 ];
 
 interface LanguageSelectorProps {
-  onSelect: (languagePair: { id: string; source: string; target: string }) => void;
+  selectedSource: string;
+  selectedTarget: string;
+  onLanguageChange: (source: string, target: string) => void;
   className?: string;
-  initialValue?: { id: string; source: string; target: string } | null;
 }
 
-const LanguageSelector = ({ onSelect, className, initialValue }: LanguageSelectorProps) => {
+const LanguageSelector = ({ 
+  selectedSource, 
+  selectedTarget, 
+  onLanguageChange, 
+  className 
+}: LanguageSelectorProps) => {
   const [open, setOpen] = useState(false);
-  const [selectedLanguagePair, setSelectedLanguagePair] = useState<{
-    id: string;
-    source: string;
-    target: string;
-  } | null>(initialValue || null);
-
-  // Initialize from settings if no initialValue is provided
-  useEffect(() => {
-    if (!selectedLanguagePair) {
-      const settings = loadSettings();
-      if (settings.selectedLanguagePair) {
-        setSelectedLanguagePair(settings.selectedLanguagePair);
-        // Also notify parent component
-        onSelect(settings.selectedLanguagePair);
-      }
-    }
-  }, [selectedLanguagePair, onSelect]);
-
-  // Update if initialValue changes
-  useEffect(() => {
-    if (initialValue) {
-      setSelectedLanguagePair(initialValue);
-    }
-  }, [initialValue]);
 
   const handleSelect = (pair: { id: string; source: string; target: string }) => {
-    setSelectedLanguagePair(pair);
     setOpen(false);
-    onSelect(pair);
+    onLanguageChange(pair.source, pair.target);
   };
 
+  // Find the current pair ID based on source and target
+  const getCurrentPairId = () => {
+    const pair = languagePairs.find(
+      p => p.source === selectedSource && p.target === selectedTarget
+    );
+    return pair ? pair.id : null;
+  };
+
+  const currentPairId = getCurrentPairId();
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={`w-full justify-between ${className}`}
-        >
-          {selectedLanguagePair
-            ? `${selectedLanguagePair.source} → ${selectedLanguagePair.target}`
-            : "Select language pair..."}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0">
-        <Command>
-          <CommandInput placeholder="Search language pair..." />
-          <CommandList>
-            <CommandEmpty>No language pair found.</CommandEmpty>
-            <CommandGroup className="max-h-60 overflow-y-auto">
-            {languagePairs.map((pair) => (
-              <CommandItem
-                key={pair.id}
-                value={`${pair.source} ${pair.target}`}
-                onSelect={() => handleSelect(pair)}
-              >
-                <Check
-                  className={`mr-2 h-4 w-4 ${selectedLanguagePair?.id === pair.id ? "opacity-100" : "opacity-0"}`}
-                />
-                {pair.source} → {pair.target}
-              </CommandItem>
-            ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <div className={`language-selector ${className || ''}`}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between border-indigo-200 bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 h-12"
+          >
+            {selectedSource && selectedTarget
+              ? `${selectedSource} → ${selectedTarget}`
+              : "Select language pair..."}
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0 border-indigo-200 shadow-md">
+          <Command>
+            <CommandInput placeholder="Search language pair..." className="border-b border-indigo-100" />
+            <CommandList>
+              <CommandEmpty>No language pair found.</CommandEmpty>
+              <CommandGroup className="max-h-60 overflow-y-auto">
+              {languagePairs.map((pair) => (
+                <CommandItem
+                  key={pair.id}
+                  value={`${pair.source} ${pair.target}`}
+                  onSelect={() => handleSelect(pair)}
+                  className="hover:bg-indigo-50"
+                >
+                  <Check
+                    className={`mr-2 h-4 w-4 ${currentPairId === pair.id ? "opacity-100 text-indigo-600" : "opacity-0"}`}
+                  />
+                  {pair.source} → {pair.target}
+                </CommandItem>
+              ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 };
 

@@ -154,7 +154,8 @@ test.describe('Study Mode', () => {
     await page.getByRole('button', { name: 'Finish' }).click();
     
     // Verify we're back on the dashboard
-    await expect(page.locator('h1')).toContainText('Dashboard');
+    await expect(page.getByText('Current Streak')).toBeVisible();
+    await expect(page.getByText('Cards Due Today')).toBeVisible();
   });
 
   test('should track study progress', async ({ page }) => {
@@ -194,7 +195,7 @@ test.describe('Study Mode', () => {
     await page.getByRole('button', { name: 'Finish' }).click();
     
     // Wait for the dashboard to load
-    await page.waitForSelector('h1:has-text("Dashboard")');
+    await page.waitForSelector('[data-testid="dashboard-stats"]');
     
     // Verify the "Last Studied" field is updated - it should not contain "Never"
     const rows = await page.locator('table tbody tr').all();
