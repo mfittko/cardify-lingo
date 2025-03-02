@@ -21,7 +21,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 1,
   // Determine the number of workers based on environment
   workers: process.env.CI 
-    ? 3 // Use a fixed number for CI environments
+    ? 6 // Use a fixed number for CI environments
     : Math.max(2, os.cpus().length - 1), // Use CPU count for local development
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI 
