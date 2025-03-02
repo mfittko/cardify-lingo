@@ -15,7 +15,8 @@
     "test:debug": "playwright test --debug",
     "test:headless": "playwright test --reporter=list",
     "test:single": "playwright test --reporter=list",
-    "test:ci": "playwright test --reporter=list --timeout=10000"
+    "test:ci": "playwright test --reporter=list",
+    "test:ci:full": "playwright test --reporter=list,html,junit"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
