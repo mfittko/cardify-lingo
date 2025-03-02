@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { setupDashboard, fillCardByIndex } from './utils';
+import { setupDashboard, fillCardByIndex, waitForCardsView } from './utils';
 
 test.describe('Dashboard', () => {
   test('should display dashboard elements correctly', async ({ page }) => {
@@ -22,48 +22,48 @@ test.describe('Dashboard', () => {
     await setupDashboard(page);
     
     // Click the Create Deck button
-    await page.click('text=Create Deck');
+    await page.getByRole('button', { name: 'Create Deck' }).first().click();
     
     // Verify we're on the deck creation page
     await expect(page.locator('h2')).toContainText('Create New Deck');
     
     // Fill in the deck title
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Test Deck');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Dashboard Test Deck');
     
     // Click Next: Add Cards
-    await page.click('text=Next: Add Cards');
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
     
-    // Verify we're on the card creation page
-    await expect(page.getByText('Cards (1)')).toBeVisible();
+    // Wait for the cards view to be visible using our helper function
+    await waitForCardsView(page);
     
     // Add a card using the helper function
     await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Create the deck
-    await page.click('text=Create Deck');
+    await page.getByRole('button', { name: 'Create Deck' }).click();
     
     // Verify we're back on the dashboard
-    await expect(page.getByText('Cardify Lingo')).toBeVisible();
+    await expect(page.getByText('Current Streak')).toBeVisible();
     
     // Verify the new deck is displayed
-    await expect(page.getByText('Test Deck')).toBeVisible();
+    await expect(page.getByText('Dashboard Test Deck')).toBeVisible();
   });
 
   test('should display proper table alignment', async ({ page }) => {
     // Setup dashboard
     await setupDashboard(page);
     
-    // Create a deck to ensure we have content to display
-    const deckName = `Alignment Test Deck ${Date.now()}`;
-    
     // Click the Create Deck button
     await page.getByRole('button', { name: 'Create Deck' }).first().click();
     
     // Fill in the deck title
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Alignment Test Deck');
     
     // Click Next: Add Cards
     await page.getByRole('button', { name: 'Next: Add Cards' }).click();
+    
+    // Wait for the cards view to be visible using our helper function
+    await waitForCardsView(page);
     
     // Add a card
     await fillCardByIndex(page, 0, 'Hello', 'Hola');
@@ -71,10 +71,11 @@ test.describe('Dashboard', () => {
     // Create the deck
     await page.getByRole('button', { name: 'Create Deck' }).click();
     
-    // Wait for the dashboard to load with the new deck
+    // Verify we're back on the dashboard
     await expect(page.getByText('Current Streak')).toBeVisible();
-    await expect(page.getByText('Cards Due Today')).toBeVisible();
-    await expect(page.getByText(deckName)).toBeVisible();
+    
+    // Verify the new deck is displayed
+    await expect(page.getByText('Alignment Test Deck')).toBeVisible();
     
     // Make sure we're on the "All Decks" tab to see the table
     await page.getByRole('tab', { name: 'All Decks' }).click();

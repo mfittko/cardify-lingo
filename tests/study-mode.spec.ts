@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { setupDashboard, createBasicDeck, fillCardByIndex } from './utils';
+import { 
+  setupDashboard, 
+  createBasicDeck, 
+  fillCardByIndex, 
+  waitForFlashcard,
+  flipCard,
+  waitForSessionComplete,
+  waitForCardsView
+} from './utils';
 
 test.describe('Study Mode', () => {
   test.beforeEach(async ({ page }) => {
@@ -8,9 +16,6 @@ test.describe('Study Mode', () => {
   });
 
   test('should display flashcards correctly', async ({ page }) => {
-    // Set a longer timeout for this test
-    test.setTimeout(15000);
-    
     // Create a unique test deck
     const deckName = `Study Display Deck ${Date.now()}`;
     
@@ -19,28 +24,15 @@ test.describe('Study Mode', () => {
     
     // Wait for the UI to stabilize
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
     
     // Click the Study button on the deck we just created
     await page.getByRole('button', { name: 'Study' }).first().click();
     
-    // Wait for the study page to load
-    await page.waitForLoadState('networkidle');
-    
-    // Verify we're in study mode by checking for the deck title
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    
-    // Verify the flashcard is displayed - use a more specific selector
-    await expect(page.locator('.perspective')).toBeVisible();
-    
-    // Verify the progress indicator is visible
-    await expect(page.getByText(/Card \d+ of/)).toBeVisible();
+    // Wait for the study page to load and verify flashcard is displayed
+    await waitForFlashcard(page);
   });
 
   test('should allow flipping cards', async ({ page }) => {
-    // Set a longer timeout for this test
-    test.setTimeout(15000);
-    
     // Create a unique test deck
     const deckName = `Study Flip Deck ${Date.now()}`;
     
@@ -49,25 +41,20 @@ test.describe('Study Mode', () => {
     
     // Wait for the UI to stabilize
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
     
     // Click the Study button on the deck we just created
     await page.getByRole('button', { name: 'Study' }).first().click();
     
-    // Wait for the study page to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.perspective');
+    // Wait for the flashcard to be visible
+    await waitForFlashcard(page);
     
     // Verify the difficulty buttons are not visible before flipping
     await expect(page.getByRole('button', { name: 'Easy' })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Medium' })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Hard' })).not.toBeVisible();
     
-    // Click to flip the card
-    await page.locator('.perspective').click();
-    
-    // Wait for the card to flip
-    await page.waitForTimeout(500);
+    // Flip the card and wait for the back to be visible
+    await flipCard(page);
     
     // Verify the back of the card is now visible by checking for the rating buttons
     await expect(page.getByRole('button', { name: 'Easy' })).toBeVisible();
@@ -76,9 +63,6 @@ test.describe('Study Mode', () => {
   });
 
   test('should allow marking cards as known or unknown', async ({ page }) => {
-    // Set a longer timeout for this test
-    test.setTimeout(15000);
-    
     // Create a unique test deck
     const deckName = `Study Marking Deck ${Date.now()}`;
     
@@ -86,6 +70,9 @@ test.describe('Study Mode', () => {
     await page.click('text=Create Deck');
     await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
     await page.click('text=Next: Add Cards');
+    
+    // Wait for the cards view to be visible
+    await waitForCardsView(page);
     
     // Add a card using the helper function
     await fillCardByIndex(page, 0, 'Hello', 'Hola');
@@ -106,49 +93,30 @@ test.describe('Study Mode', () => {
     
     // Wait for the UI to stabilize
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
     
     // Click the Study button on the deck we just created
     await page.getByRole('button', { name: 'Study' }).first().click();
     
-    // Wait for the study page to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.perspective');
+    // Wait for the flashcard to be visible
+    await waitForFlashcard(page);
     
     // Flip the card to see the answer
-    await page.locator('.perspective').click();
-    
-    // Wait for the card to flip
-    await page.waitForTimeout(500);
-    
-    // Verify the difficulty buttons are visible
-    await expect(page.getByRole('button', { name: 'Easy' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Medium' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Hard' })).toBeVisible();
+    await flipCard(page);
     
     // Click "Easy" (equivalent to "I knew it")
     await page.getByRole('button', { name: 'Easy' }).click();
     
-    // Wait for the next card
-    await page.waitForTimeout(1000);
+    // Wait for the next card to be visible
+    await waitForFlashcard(page);
     
     // Flip the second card
-    await page.locator('.perspective').click();
-    
-    // Wait for the card to flip
-    await page.waitForTimeout(500);
+    await flipCard(page);
     
     // Click "Hard" (equivalent to "I didn't know")
     await page.getByRole('button', { name: 'Hard' }).click();
     
     // Wait for the completion screen
-    await page.waitForTimeout(1000);
-    
-    // Now we should see the completion screen
-    await expect(page.getByText('Session Complete!')).toBeVisible();
-    
-    // Verify the "Finish" button is visible
-    await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
+    await waitForSessionComplete(page);
     
     // Go back to dashboard
     await page.getByRole('button', { name: 'Finish' }).click();
@@ -159,9 +127,6 @@ test.describe('Study Mode', () => {
   });
 
   test('should track study progress', async ({ page }) => {
-    // Set a longer timeout for this test
-    test.setTimeout(15000);
-    
     // Create a unique test deck
     const deckName = `Study Progress Deck ${Date.now()}`;
     
@@ -170,26 +135,20 @@ test.describe('Study Mode', () => {
     
     // Wait for the UI to stabilize
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
     
     // Click the Study button on the deck we just created
     await page.getByRole('button', { name: 'Study' }).first().click();
     
-    // Wait for the study page to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.perspective');
+    // Wait for the flashcard to be visible
+    await waitForFlashcard(page);
     
     // Complete a study session
-    await page.locator('.perspective').click();
-    
-    // Wait for the card to flip
-    await page.waitForTimeout(500);
+    await flipCard(page);
     
     await page.getByRole('button', { name: 'Easy' }).click();
     
     // Wait for the completion screen
-    await page.waitForTimeout(1000);
-    await expect(page.getByText('Session Complete!')).toBeVisible();
+    await waitForSessionComplete(page);
     
     // Go back to dashboard
     await page.getByRole('button', { name: 'Finish' }).click();

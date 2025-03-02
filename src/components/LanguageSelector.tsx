@@ -42,15 +42,28 @@ interface LanguageSelectorProps {
   selectedTarget: string;
   onLanguageChange: (source: string, target: string) => void;
   className?: string;
+  initialValue?: { id: string; source: string; target: string } | null;
 }
 
 const LanguageSelector = ({ 
   selectedSource, 
   selectedTarget, 
   onLanguageChange, 
-  className 
+  className,
+  initialValue
 }: LanguageSelectorProps) => {
   const [open, setOpen] = useState(false);
+
+  // Use initialValue if provided
+  useEffect(() => {
+    if (initialValue && initialValue.source && initialValue.target) {
+      // Only call onLanguageChange if the values are different from current selection
+      // This prevents the infinite update loop
+      if (initialValue.source !== selectedSource || initialValue.target !== selectedTarget) {
+        onLanguageChange(initialValue.source, initialValue.target);
+      }
+    }
+  }, [initialValue, onLanguageChange, selectedSource, selectedTarget]);
 
   const handleSelect = (pair: { id: string; source: string; target: string }) => {
     setOpen(false);

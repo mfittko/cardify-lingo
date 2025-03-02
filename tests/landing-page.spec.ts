@@ -20,22 +20,20 @@ test.describe('Landing Page', () => {
     // Verify the language selector component is present
     await expect(page.locator('.language-selector')).toBeVisible();
     
-    // Verify the Continue button is present
-    const continueButton = page.getByRole('button', { name: 'Continue' });
-    await expect(continueButton).toBeVisible();
-    await expect(continueButton).toBeEnabled();
+    // Verify the Create Your First Deck button is present
+    const createButton = page.getByRole('button', { name: 'Create Your First Deck' });
+    await expect(createButton).toBeVisible();
+    await expect(createButton).toBeEnabled();
   });
   
-  test('should navigate to dashboard when clicking Continue', async ({ page }) => {
+  test('should navigate to create deck view when clicking Create Your First Deck', async ({ page }) => {
     // Navigate to the landing page
     await page.goto('/');
     
-    // Click the Continue button
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // Click the Create Your First Deck button
+    await page.getByRole('button', { name: 'Create Your First Deck' }).click();
     
-    // Verify we're on the dashboard page by checking for elements only present on the dashboard
-    await expect(page.getByText('Current Streak')).toBeVisible();
-    await expect(page.getByText('Cards Due Today')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Create Deck' })).toBeVisible();
+    // Verify we're on the deck creation page
+    await expect(page.locator('h2')).toContainText('Create New Deck');
   });
 });

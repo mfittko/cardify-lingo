@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import LanguageSelector from '@/components/LanguageSelector';
-import { languageExamples, generateId, saveSettings, loadSettings } from '@/utils/storage';
+import { languageExamples, generateId, saveSettings, loadSettings, loadDecks } from '@/utils/storage';
 import { motion } from 'framer-motion';
 
 export default function Index() {
@@ -16,6 +16,15 @@ export default function Index() {
       target: 'Spanish' 
     }
   );
+
+  // Check if any decks exist on component mount
+  useEffect(() => {
+    const decks = loadDecks();
+    // If user already has decks, redirect to dashboard
+    if (decks.length > 0) {
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   const handleLanguageChange = (source: string, target: string) => {
     setSelectedLanguagePair({
@@ -33,8 +42,10 @@ export default function Index() {
       selectedLanguagePair
     });
     
-    // Navigate to dashboard
-    navigate('/dashboard');
+    // Navigate directly to create deck view with the language pair in state
+    navigate('/create', {
+      state: { selectedLanguagePair }
+    });
   };
 
   return (
@@ -71,7 +82,7 @@ export default function Index() {
                 className="w-full bg-indigo-600 hover:bg-indigo-700 py-6 text-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg" 
                 onClick={handleContinue}
               >
-                Continue
+                Create Your First Deck
               </Button>
             </div>
           </CardContent>
