@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-
+import os from 'os';
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -19,8 +19,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 1,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : 4,
+  // use amount of actually available cores
+  workers: Math.max(2, os.cpus().length - 1),
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI 
     ? [['list'], ['html'], ['junit', { outputFile: 'test-results/playwright/junit.xml' }]] 
