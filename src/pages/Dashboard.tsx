@@ -112,15 +112,15 @@ const Dashboard = () => {
         <div className="rounded-md border">
           <Table>
             <TableCaption>A list of your decks.</TableCaption>
-            <TableHead>
+            <thead>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead className="text-right">Cards</TableHead>
-                <TableHead>Due</TableHead>
-                <TableHead>Last Studied</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-1/4">Title</TableHead>
+                <TableHead className="text-center w-1/12">Cards</TableHead>
+                <TableHead className="w-1/6">Due</TableHead>
+                <TableHead className="w-1/6">Last Studied</TableHead>
+                <TableHead className="text-right w-1/4">Actions</TableHead>
               </TableRow>
-            </TableHead>
+            </thead>
             <TableBody>
               {filteredDecks.map((deck) => {
                 const stats = getStudyStats(deck.cards);
@@ -129,44 +129,48 @@ const Dashboard = () => {
                 return (
                   <TableRow key={deck.id}>
                     <TableCell className="font-medium">{deck.title}</TableCell>
-                    <TableCell className="text-right">{stats.totalCount}</TableCell>
+                    <TableCell className="text-center">{stats.totalCount}</TableCell>
                     <TableCell>
-                      {stats.dueCount > 0 && (
-                        <Badge variant="destructive">
-                          {stats.dueCount} Due
-                        </Badge>
-                      )}
-                      {stats.newCount > 0 && (
-                        <Badge variant="secondary" className="ml-1">
-                          {stats.newCount} New
-                        </Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {stats.dueCount > 0 && (
+                          <Badge variant="destructive">
+                            {stats.dueCount} Due
+                          </Badge>
+                        )}
+                        {stats.newCount > 0 && (
+                          <Badge variant="secondary">
+                            {stats.newCount} New
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {lastStudiedDate ? format(lastStudiedDate, 'MMM dd, yyyy') : 'Never'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => navigate(`/edit/${deck.id}`)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => navigate(`/study/${deck.id}`)}
-                      >
-                        Study <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteDeck(deck.id)}
-                      >
-                        Delete
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => navigate(`/edit/${deck.id}`)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => navigate(`/study/${deck.id}`)}
+                        >
+                          Study <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteDeck(deck.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
