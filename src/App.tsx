@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import DeckCreation from "./pages/DeckCreation";
 import DeckEdit from "./pages/DeckEdit";
+import DeckStats from "./pages/DeckStats";
 import StudyMode from "./pages/StudyMode";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/create" element={<DeckCreation />} />
           <Route path="/edit/:deckId" element={<DeckEdit />} />
+          <Route path="/stats/:deckId" element={<DeckStats />} />
           <Route path="/study/:deckId" element={<StudyMode />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
