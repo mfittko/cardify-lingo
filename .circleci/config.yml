@@ -2,7 +2,6 @@ version: 2.1
 
 orbs:
   node: circleci/node@7.1.0
-  browser-tools: circleci/browser-tools@1.5.2
 
 jobs:
   test:
@@ -13,9 +12,6 @@ jobs:
       - checkout
       - node/install-packages:
           pkg-manager: npm
-      - browser-tools/install-browser-tools:
-          install-geckodriver: false
-          install-firefox: false
       - run:
           name: Install Playwright Chrome browser
           command: npx playwright install chromium
@@ -24,7 +20,7 @@ jobs:
           command: mkdir -p test-results/playwright
       - run:
           name: Start web server in background
-          command: npm run dev
+          command: PORT=8108 npm run dev
           background: true
       - run:
           name: Wait for web server to start
@@ -33,11 +29,14 @@ jobs:
             for i in $(seq 1 30); do
               if curl -s http://localhost:8108 > /dev/null; then
                 echo "Server is up!"
-                break
+                exit 0
               fi
               echo "Waiting for server... ($i/30)"
               sleep 1
             done
+
+            echo "Server failed to start"
+            exit 1
       - run:
           name: Run Playwright tests
           command: |
