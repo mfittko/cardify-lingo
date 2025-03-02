@@ -13,13 +13,31 @@ jobs:
       - checkout
       - node/install-packages:
           pkg-manager: npm
-      - browser-tools/install-browser-tools
+      - browser-tools/install-browser-tools:
+          install-geckodriver: false
+          install-firefox: false
       - run:
-          name: Install Playwright browsers
-          command: npx playwright install --with-deps chromium
+          name: Install Playwright Chrome browser
+          command: npx playwright install chromium
       - run:
           name: Create test results directory
           command: mkdir -p test-results/playwright
+      - run:
+          name: Start web server in background
+          command: npm run dev
+          background: true
+      - run:
+          name: Wait for web server to start
+          command: |
+            # Wait for the server to be available
+            for i in $(seq 1 30); do
+              if curl -s http://localhost:8108 > /dev/null; then
+                echo "Server is up!"
+                break
+              fi
+              echo "Waiting for server... ($i/30)"
+              sleep 1
+            done
       - run:
           name: Run Playwright tests
           command: |
