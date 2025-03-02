@@ -118,6 +118,46 @@ We don't support custom domains (yet). If you want to deploy your project under 
 
 This project is configured to automatically deploy iOS builds to TestFlight when changes are pushed to the `main` branch. The deployment is handled by Fastlane and CircleCI.
 
+### Building the iOS App Locally
+
+To build the iOS app locally, you can use either the command line or Xcode UI:
+
+#### Using the Command Line
+
+```bash
+# Navigate to the iOS app directory
+cd ios/App
+
+# Make the build script executable
+chmod +x build-app.sh
+
+# Run the build script
+./build-app.sh
+```
+
+#### Using Xcode UI
+
+To build the app directly in Xcode:
+
+1. Run the setup script to configure the project for Xcode:
+   ```bash
+   cd ios/App
+   chmod +x setup-for-xcode.sh
+   ./setup-for-xcode.sh
+   ```
+
+2. Open the Xcode workspace:
+   ```bash
+   open App.xcworkspace
+   ```
+
+3. In Xcode:
+   - Select the "App" scheme
+   - Choose a simulator or device
+   - Click the Run button (or press Cmd+R)
+
+If you encounter script sandboxing issues, you can manually set `ENABLE_USER_SCRIPT_SANDBOXING` to `NO` in the build settings for both the App target and all Pod targets.
+
 ### Required Environment Variables
 
 Set up the following environment variables in your CircleCI project settings:
