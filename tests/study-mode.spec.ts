@@ -28,7 +28,7 @@ test.describe('Study Mode', () => {
     await page.waitForLoadState('networkidle');
     
     // Verify we're in study mode by checking for the deck title
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: deckName })).toBeVisible();
     
     // Verify the flashcard is displayed - use a more specific selector
     await expect(page.locator('.perspective')).toBeVisible();
@@ -83,23 +83,22 @@ test.describe('Study Mode', () => {
     const deckName = `Study Marking Deck ${Date.now()}`;
     
     // Create a new test deck for studying with two cards
-    await page.click('text=Create Deck');
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', deckName);
-    await page.click('text=Next: Add Cards');
+    await page.getByRole('button', { name: 'Create Deck' }).first().click();
+    await page.fill('input[placeholder="e.g., Spanish Vocabulary"]', deckName);
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
     
     // Add a card using the helper function
     await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Add second card
-    await page.click('text=Add Card');
+    await page.getByRole('button', { name: 'Add Card' }).click();
     await page.waitForSelector('text=Card 2');
-    const frontInputs = await page.getByPlaceholder('e.g., Hello').all();
-    const backInputs = await page.getByPlaceholder('e.g., Hola').all();
-    await frontInputs[1].fill('Thank you');
-    await backInputs[1].fill('Gracias');
+    
+    // Fill in the second card
+    await fillCardByIndex(page, 1, 'Thank you', 'Gracias');
     
     // Create the deck
-    await page.click('text=Create Deck');
+    await page.getByRole('button', { name: 'Create Deck' }).click();
     
     // Wait for the dashboard to load with the new deck
     await expect(page.getByText(deckName)).toBeVisible();
@@ -154,7 +153,7 @@ test.describe('Study Mode', () => {
     await page.getByRole('button', { name: 'Finish' }).click();
     
     // Verify we're back on the dashboard
-    await expect(page.locator('h1')).toContainText('Dashboard');
+    await expect(page.getByText('Current Streak')).toBeVisible();
   });
 
   test('should track study progress', async ({ page }) => {
@@ -194,7 +193,7 @@ test.describe('Study Mode', () => {
     await page.getByRole('button', { name: 'Finish' }).click();
     
     // Wait for the dashboard to load
-    await page.waitForSelector('h1:has-text("Dashboard")');
+    await expect(page.getByText('Current Streak')).toBeVisible();
     
     // Verify the "Last Studied" field is updated - it should not contain "Never"
     const rows = await page.locator('table tbody tr').all();

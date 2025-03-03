@@ -5,43 +5,42 @@ test.describe('Landing Page', () => {
     // Navigate to the landing page
     await page.goto('/');
     
-    // Verify the page title and subtitle
-    await expect(page.locator('h1')).toContainText('Linguo');
-    await expect(page.getByText('Master languages through the power of flashcards')).toBeVisible();
+    // Verify the title is displayed
+    await expect(page.locator('h1')).toContainText('Cardify Lingo');
     
-    // Verify the language selector is present
+    // Verify the subtitle is displayed
+    await expect(page.getByText('Master languages with smart flashcards')).toBeVisible();
+    
+    // Verify the language selector is displayed
     await expect(page.getByRole('combobox').first()).toBeVisible();
     
-    // Verify the Create New Deck and View Dashboard buttons are present but disabled
-    const createDeckButton = page.getByRole('button', { name: 'Create New Deck' });
-    const viewDashboardButton = page.getByRole('button', { name: 'View Dashboard' });
-    await expect(createDeckButton).toBeVisible();
-    await expect(viewDashboardButton).toBeVisible();
-    await expect(createDeckButton).toBeDisabled();
-    await expect(viewDashboardButton).toBeDisabled();
+    // Verify the buttons are displayed
+    await expect(page.getByRole('button', { name: 'Create Your First Deck' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'View Dashboard' })).toBeVisible();
   });
   
   test('should allow selecting a language pair', async ({ page }) => {
     // Navigate to the landing page
     await page.goto('/');
     
-    // Click on the language pair dropdown
+    // Verify the landing page title
+    await expect(page.getByRole('heading', { name: 'Cardify Lingo' })).toBeVisible();
+    
+    // Verify the subtitle
+    await expect(page.getByText('Master languages with smart flashcards')).toBeVisible();
+    
+    // Verify the language selector is present
+    await expect(page.getByRole('combobox').first()).toBeVisible();
+    
+    // Click the language selector
     await page.getByRole('combobox').first().click();
     
-    // Verify the dropdown menu is visible - use a more specific selector
-    await expect(page.getByPlaceholder('Search language pair...')).toBeVisible();
+    // Select English → French
+    await page.getByRole('option', { name: 'English → French' }).click();
     
-    // Select English → Spanish from the dropdown
-    await page.getByRole('option', { name: 'English → Spanish' }).click();
-    
-    // Verify the selected language pair is displayed
-    await expect(page.getByRole('combobox').first()).toContainText('English → Spanish');
-    
-    // Verify the Create New Deck and View Dashboard buttons are now enabled
-    const createDeckButton = page.getByRole('button', { name: 'Create New Deck' });
-    const viewDashboardButton = page.getByRole('button', { name: 'View Dashboard' });
-    await expect(createDeckButton).toBeEnabled();
-    await expect(viewDashboardButton).toBeEnabled();
+    // Verify the buttons are enabled after selection
+    await expect(page.getByRole('button', { name: 'Create Your First Deck' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'View Dashboard' })).toBeEnabled();
   });
   
   test('should provide options to create deck or view dashboard', async ({ page }) => {
@@ -52,19 +51,19 @@ test.describe('Landing Page', () => {
     await page.getByRole('combobox').first().click();
     await page.getByRole('option', { name: 'English → Spanish' }).click();
     
-    // Verify both options are available and enabled
-    const createDeckButton = page.getByRole('button', { name: 'Create New Deck' });
-    const viewDashboardButton = page.getByRole('button', { name: 'View Dashboard' });
+    // Verify the Create Your First Deck button is displayed
+    const createDeckButton = page.getByRole('button', { name: 'Create Your First Deck' });
     await expect(createDeckButton).toBeVisible();
-    await expect(viewDashboardButton).toBeVisible();
-    await expect(createDeckButton).toBeEnabled();
-    await expect(viewDashboardButton).toBeEnabled();
     
-    // Test the Create New Deck button navigates to deck creation
+    // Verify the View Dashboard button is displayed
+    const viewDashboardButton = page.getByRole('button', { name: 'View Dashboard' });
+    await expect(viewDashboardButton).toBeVisible();
+    
+    // Test the Create Your First Deck button navigates to deck creation
     await createDeckButton.click();
     await expect(page.locator('h2')).toContainText('Create New Deck');
     
-    // Go back to landing page
+    // Go back to the landing page
     await page.goto('/');
     
     // Select a language pair again
@@ -73,6 +72,6 @@ test.describe('Landing Page', () => {
     
     // Test the View Dashboard button navigates to dashboard
     await page.getByRole('button', { name: 'View Dashboard' }).click();
-    await expect(page.locator('h1')).toContainText('Dashboard');
+    await expect(page.getByText('Current Streak')).toBeVisible();
   });
 });

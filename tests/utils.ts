@@ -7,13 +7,16 @@ export async function setupDashboard(page: Page): Promise<void> {
   // Navigate to the landing page
   await page.goto('/');
   
-  // Select English → Spanish and view dashboard
-  await page.click('text=Select language pair...');
-  await page.click('text=English → Spanish');
-  await page.click('text=View Dashboard');
+  // Select English → Spanish
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'English → Spanish' }).click();
   
-  // Verify we're on the dashboard page
-  await expect(page.locator('h1')).toContainText('Dashboard');
+  // Go to dashboard
+  await page.getByText('View Dashboard').click();
+  
+  // Verify we're on the dashboard by checking for dashboard elements
+  await expect(page.getByText('Current Streak')).toBeVisible();
+  await expect(page.getByText('Cards Due Today')).toBeVisible();
 }
 
 /**
@@ -21,29 +24,28 @@ export async function setupDashboard(page: Page): Promise<void> {
  */
 export async function createBasicDeck(page: Page, deckName: string): Promise<void> {
   // Click the Create Deck button
-  await page.click('text=Create Deck');
-  
-  // Verify we're on the deck creation page
-  await expect(page.locator('h2')).toContainText('Create New Deck');
+  await page.getByRole('button', { name: 'Create Deck' }).first().click();
   
   // Fill in the deck title
-  await page.fill('input[placeholder^="e.g., Basic Spanish Phrases"]', deckName);
+  await page.fill('input[placeholder="e.g., Spanish Vocabulary"]', deckName);
+  
+  // Select a language pair
+  const languagePairSelector = page.getByRole('combobox').first();
+  await languagePairSelector.click();
+  await page.waitForSelector('text=English → Spanish');
+  await page.getByRole('option', { name: 'English → Spanish' }).click();
   
   // Click Next: Add Cards
-  await page.click('text=Next: Add Cards');
+  await page.getByRole('button', { name: 'Next: Add Cards' }).click();
   
-  // Wait for the cards view to be visible
-  await page.waitForSelector('text=Cards (1)');
-  
-  // Add a card using direct input selectors
-  await page.fill('#card-front-0', 'Hello');
-  await page.fill('#card-back-0', 'Hola');
+  // Add a card
+  await fillCardByIndex(page, 0, 'Hello', 'Hola');
   
   // Create the deck
-  await page.click('text=Create Deck');
+  await page.getByRole('button', { name: 'Create Deck' }).click();
   
   // Verify we're back on the dashboard
-  await expect(page.locator('h1')).toContainText('Dashboard');
+  await expect(page.getByText('Current Streak')).toBeVisible();
   
   // Verify the new deck is displayed
   await expect(page.getByText(deckName)).toBeVisible();
@@ -66,12 +68,25 @@ export async function getBackInputByIndex(page: Page, index: number) {
 /**
  * Fill a card's front and back by its index (0-based)
  */
-export async function fillCardByIndex(page: Page, index: number, front: string, back: string) {
+export async function fillCardByIndex(page: Page, index: number, frontText: string, backText: string): Promise<void> {
+  // Try to find the inputs with either naming pattern
+  const frontSelector = `#front-${index}, #card-front-${index}`;
+  const backSelector = `#back-${index}, #card-back-${index}`;
+  
   // Wait for the card inputs to be visible
-  await page.waitForSelector(`#card-front-${index}`);
-  await page.waitForSelector(`#card-back-${index}`);
+  await page.waitForSelector(frontSelector);
+  await page.waitForSelector(backSelector);
+  
+  // Get the actual elements
+  const frontInput = await page.$(frontSelector);
+  const backInput = await page.$(backSelector);
   
   // Fill the inputs
-  await page.fill(`#card-front-${index}`, front);
-  await page.fill(`#card-back-${index}`, back);
+  if (frontInput) {
+    await frontInput.fill(frontText);
+  }
+  
+  if (backInput) {
+    await backInput.fill(backText);
+  }
 }
