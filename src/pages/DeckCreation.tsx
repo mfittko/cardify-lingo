@@ -282,9 +282,16 @@ const DeckCreation = () => {
                 <div className="space-y-2">
                   <Label htmlFor="languagePair">Language Pair</Label>
                   <LanguageSelector 
-                    onSelect={handleLanguageSelect} 
+                    onLanguageChange={(source, target) => {
+                      handleLanguageSelect({
+                        id: `${source}-${target}`.toLowerCase(),
+                        source,
+                        target
+                      });
+                    }}
                     className="w-full"
-                    initialValue={languagePair}
+                    selectedSource={languagePair?.source || ""}
+                    selectedTarget={languagePair?.target || ""}
                   />
                   {!languagePair && (
                     <p className="text-sm text-red-500 flex items-center mt-1">

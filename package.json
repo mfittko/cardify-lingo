@@ -20,6 +20,10 @@
   },
   "dependencies": {
     "@11labs/react": "^0.0.7",
+    "@capacitor/android": "^7.0.1",
+    "@capacitor/core": "^7.0.1",
+    "@capacitor/ios": "^7.0.1",
+    "@capacitor/local-notifications": "^7.0.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -72,6 +76,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
     "@eslint/js": "^9.9.0",
     "@playwright/test": "^1.50.1",
     "@tailwindcss/typography": "^0.5.15",

@@ -113,3 +113,87 @@ Simply open [Lovable](https://lovable.dev/projects/660a78c1-d643-423c-8ff4-dc41d
 ## I want to use a custom domain - is that possible?
 
 We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+
+## iOS Deployment with CircleCI
+
+This project is configured to automatically deploy iOS builds to TestFlight when changes are pushed to the `main` branch. The deployment is handled by Fastlane and CircleCI.
+
+### Building the iOS App Locally
+
+To build the iOS app locally, you can use either the command line or Xcode UI:
+
+#### Using the Command Line
+
+```bash
+# Navigate to the iOS app directory
+cd ios/App
+
+# Make the build script executable
+chmod +x build-app.sh
+
+# Run the build script
+./build-app.sh
+```
+
+#### Using Xcode UI
+
+To build the app directly in Xcode:
+
+1. Run the setup script to configure the project for Xcode:
+   ```bash
+   cd ios/App
+   chmod +x setup-for-xcode.sh
+   ./setup-for-xcode.sh
+   ```
+
+2. Open the Xcode workspace:
+   ```bash
+   open App.xcworkspace
+   ```
+
+3. In Xcode:
+   - Select the "App" scheme
+   - Choose a simulator or device
+   - Click the Run button (or press Cmd+R)
+
+If you encounter script sandboxing issues, you can manually set `ENABLE_USER_SCRIPT_SANDBOXING` to `NO` in the build settings for both the App target and all Pod targets.
+
+### Required Environment Variables
+
+Set up the following environment variables in your CircleCI project settings:
+
+- `APPLE_ID`: Your Apple ID email used for App Store Connect
+- `APPLE_TEAM_ID`: Your Apple Developer Team ID (found in the Apple Developer Portal)
+- `APP_BUNDLE_ID`: Your app's bundle identifier (e.g., app.lovable.660a78c1d643423c8ff4dc41ddfba944)
+- `PROVISIONING_PROFILE_NAME`: Name of the provisioning profile for your app
+- `IOS_DISTRIBUTION_CERTIFICATE_BASE64`: Base64-encoded distribution certificate (.p12 file)
+- `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`: Password for the distribution certificate
+- `IOS_PROVISIONING_PROFILE_BASE64`: Base64-encoded provisioning profile (.mobileprovision file)
+- `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD`: App-specific password for your Apple ID
+
+### Generating Required Files
+
+1. **Distribution Certificate**:
+   - Create in Apple Developer Portal or Xcode
+   - Export as .p12 file with password
+   - Convert to base64: `base64 -i distribution.p12 | pbcopy`
+
+2. **Provisioning Profile**:
+   - Create in Apple Developer Portal
+   - Download and convert to base64: `base64 -i profile.mobileprovision | pbcopy`
+
+3. **App-Specific Password**:
+   - Generate at https://appleid.apple.com/account/manage
+   - Use for `FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD`
+
+### Manual Deployment
+
+You can also deploy manually using Fastlane:
+
+```bash
+# Deploy to TestFlight
+cd ios/App && bundle exec fastlane beta
+
+# Deploy to App Store
+cd ios/App && bundle exec fastlane release
+```

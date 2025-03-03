@@ -1,0 +1,7 @@
+app_identifier("app.lovable.660a78c1d643423c8ff4dc41ddfba944") # The bundle identifier of your app
+apple_id("mfittko@me.com") # Your Apple Developer Portal username
+
+itc_team_id("1160280") # App Store Connect Team ID
+
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile

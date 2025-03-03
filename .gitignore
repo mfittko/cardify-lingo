@@ -24,3 +24,28 @@ playwright-report/
 *.njsproj
 *.sln
 *.sw?
+
+# iOS build artifacts
+ios/App/build/
+ios/App/App/public/
+ios/App/Pods/
+ios/App/output/
+ios/App/DerivedData/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+
+# iOS backup files
+*.original
+*.bak
+*.backup
+
+# Fastlane
+ios/App/fastlane/report.xml
+ios/App/fastlane/Preview.html
+ios/App/fastlane/screenshots/**/*.png
+ios/App/fastlane/test_output
+
+# Ruby environment
+.ruby-version
+.ruby-gemset

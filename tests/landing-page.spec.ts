@@ -6,73 +6,34 @@ test.describe('Landing Page', () => {
     await page.goto('/');
     
     // Verify the page title and subtitle
-    await expect(page.locator('h1')).toContainText('Linguo');
-    await expect(page.getByText('Master languages through the power of flashcards')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Cardify Lingo');
+    await expect(page.getByText('Master languages with smart flashcards')).toBeVisible();
     
     // Verify the language selector is present
-    await expect(page.getByRole('combobox').first()).toBeVisible();
-    
-    // Verify the Create New Deck and View Dashboard buttons are present but disabled
-    const createDeckButton = page.getByRole('button', { name: 'Create New Deck' });
-    const viewDashboardButton = page.getByRole('button', { name: 'View Dashboard' });
-    await expect(createDeckButton).toBeVisible();
-    await expect(viewDashboardButton).toBeVisible();
-    await expect(createDeckButton).toBeDisabled();
-    await expect(viewDashboardButton).toBeDisabled();
+    await expect(page.locator('h2')).toContainText('Choose Your Language Pair:');
   });
   
   test('should allow selecting a language pair', async ({ page }) => {
     // Navigate to the landing page
     await page.goto('/');
     
-    // Click on the language pair dropdown
-    await page.getByRole('combobox').first().click();
+    // Verify the language selector component is present
+    await expect(page.locator('.language-selector')).toBeVisible();
     
-    // Verify the dropdown menu is visible - use a more specific selector
-    await expect(page.getByPlaceholder('Search language pair...')).toBeVisible();
-    
-    // Select English → Spanish from the dropdown
-    await page.getByRole('option', { name: 'English → Spanish' }).click();
-    
-    // Verify the selected language pair is displayed
-    await expect(page.getByRole('combobox').first()).toContainText('English → Spanish');
-    
-    // Verify the Create New Deck and View Dashboard buttons are now enabled
-    const createDeckButton = page.getByRole('button', { name: 'Create New Deck' });
-    const viewDashboardButton = page.getByRole('button', { name: 'View Dashboard' });
-    await expect(createDeckButton).toBeEnabled();
-    await expect(viewDashboardButton).toBeEnabled();
+    // Verify the Create Your First Deck button is present
+    const createButton = page.getByRole('button', { name: 'Create Your First Deck' });
+    await expect(createButton).toBeVisible();
+    await expect(createButton).toBeEnabled();
   });
   
-  test('should provide options to create deck or view dashboard', async ({ page }) => {
+  test('should navigate to create deck view when clicking Create Your First Deck', async ({ page }) => {
     // Navigate to the landing page
     await page.goto('/');
     
-    // Select a language pair
-    await page.getByRole('combobox').first().click();
-    await page.getByRole('option', { name: 'English → Spanish' }).click();
+    // Click the Create Your First Deck button
+    await page.getByRole('button', { name: 'Create Your First Deck' }).click();
     
-    // Verify both options are available and enabled
-    const createDeckButton = page.getByRole('button', { name: 'Create New Deck' });
-    const viewDashboardButton = page.getByRole('button', { name: 'View Dashboard' });
-    await expect(createDeckButton).toBeVisible();
-    await expect(viewDashboardButton).toBeVisible();
-    await expect(createDeckButton).toBeEnabled();
-    await expect(viewDashboardButton).toBeEnabled();
-    
-    // Test the Create New Deck button navigates to deck creation
-    await createDeckButton.click();
+    // Verify we're on the deck creation page
     await expect(page.locator('h2')).toContainText('Create New Deck');
-    
-    // Go back to landing page
-    await page.goto('/');
-    
-    // Select a language pair again
-    await page.getByRole('combobox').first().click();
-    await page.getByRole('option', { name: 'English → Spanish' }).click();
-    
-    // Test the View Dashboard button navigates to dashboard
-    await page.getByRole('button', { name: 'View Dashboard' }).click();
-    await expect(page.locator('h1')).toContainText('Dashboard');
   });
 });

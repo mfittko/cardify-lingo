@@ -1,37 +1,37 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import DeckCreation from "./pages/DeckCreation";
-import DeckEdit from "./pages/DeckEdit";
-import DeckStats from "./pages/DeckStats";
-import StudyMode from "./pages/StudyMode";
-import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './App.css';
+import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
+import DeckCreation from './pages/DeckCreation';
+import DeckEdit from './pages/DeckEdit';
+import StudyMode from './pages/StudyMode';
+import NotFound from './pages/NotFound';
+import DeckStats from './pages/DeckStats';
+import { initNotifications } from './utils/notifications';
+import { Toaster } from './components/ui/toaster';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+function App() {
+  useEffect(() => {
+    // Initialize notifications when app starts
+    initNotifications().catch(console.error);
+  }, []);
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/create" element={<DeckCreation />} />
+        <Route path="/edit/:deckId" element={<DeckEdit />} />
+        <Route path="/study/:deckId" element={<StudyMode />} />
+        <Route path="/stats/:deckId" element={<DeckStats />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
       <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/create" element={<DeckCreation />} />
-          <Route path="/edit/:deckId" element={<DeckEdit />} />
-          <Route path="/stats/:deckId" element={<DeckStats />} />
-          <Route path="/study/:deckId" element={<StudyMode />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </Router>
+  );
+}
 
 export default App;

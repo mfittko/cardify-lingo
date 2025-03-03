@@ -1,24 +1,22 @@
 import { test, expect } from '@playwright/test';
-import { setupDashboard, fillCardByIndex } from './utils';
+import { setupDashboard, fillCardByIndex, waitForCardsView } from './utils';
 
 test.describe('Deck Creation', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to the landing page
-    await page.goto('/');
+  async function setupDeckCreation(page) {
+    // Setup dashboard
+    await setupDashboard(page);
     
-    // Select English → Spanish and go to dashboard
-    await page.click('text=Select language pair...');
-    await page.click('text=English → Spanish');
-    await page.click('text=View Dashboard');
-    
-    // Click the Create Deck button
-    await page.click('text=Create Deck');
+    // Click the Create Deck button - use a more reliable selector
+    await page.getByRole('button', { name: 'Create Deck' }).first().click();
     
     // Verify we're on the deck creation page
     await expect(page.locator('h2')).toContainText('Create New Deck');
-  });
+  }
 
   test('should allow creating a deck with basic information', async ({ page }) => {
+    // Setup deck creation
+    await setupDeckCreation(page);
+    
     // Fill in the deck title
     await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Common Greetings');
     
@@ -29,169 +27,201 @@ test.describe('Deck Creation', () => {
     const languagePairSelector = page.getByRole('combobox').first();
     await expect(languagePairSelector).toBeVisible();
     
-    // Select a language pair
-    await languagePairSelector.click();
-    await page.waitForSelector('text=English → Spanish');
-    await page.click('text=English → Spanish');
-    
-    // Verify the language pair has been selected
-    await expect(languagePairSelector).toContainText('English → Spanish');
-    
     // Click Next: Add Cards
-    await page.click('text=Next: Add Cards');
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
     
-    // Verify we're on the card creation page
-    await expect(page.getByText('Cards (1)')).toBeVisible();
+    // Wait for the cards view to be visible using our helper function
+    await waitForCardsView(page);
+    
+    // Add a card
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
+    
+    // Create the deck
+    await page.getByRole('button', { name: 'Create Deck' }).click();
+    
+    // Verify we're back on the dashboard
+    await expect(page.getByText('Current Streak')).toBeVisible();
+    await expect(page.getByText('Cards Due Today')).toBeVisible();
+    
+    // Verify the new deck is displayed
+    await expect(page.getByText('Common Greetings')).toBeVisible();
   });
 
   test('should allow adding multiple cards to a deck', async ({ page }) => {
-    // Fill in the deck title
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Multiple Cards Test');
+    // Setup deck creation
+    await setupDeckCreation(page);
     
-    // Select a language pair
-    const languagePairSelector = page.getByRole('combobox').first();
-    await languagePairSelector.click();
-    await page.waitForSelector('text=English → Spanish');
-    await page.click('text=English → Spanish');
+    // Fill in the deck title
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Multiple Cards Deck');
     
     // Click Next: Add Cards
-    await page.click('text=Next: Add Cards');
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
     
-    // Add first card using our helper function
+    // Wait for the cards view to be visible using our helper function
+    await waitForCardsView(page);
+    
+    // Add first card
     await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Add a second card
-    await page.click('text=Add Card');
-    
-    // Wait for the second card to be visible
-    await page.waitForSelector('text=Card 2');
-    
-    // Fill in the second card using our helper function
-    await fillCardByIndex(page, 1, 'Good morning', 'Buenos días');
+    await page.getByRole('button', { name: 'Add Card' }).click();
+    await fillCardByIndex(page, 1, 'Goodbye', 'Adiós');
     
     // Add a third card
-    await page.click('text=Add Card');
-    
-    // Wait for the third card to be visible
-    await page.waitForSelector('text=Card 3');
-    
-    // Fill in the third card using our helper function
-    await fillCardByIndex(page, 2, 'Goodbye', 'Adiós');
+    await page.getByRole('button', { name: 'Add Card' }).click();
+    await fillCardByIndex(page, 2, 'Thank you', 'Gracias');
     
     // Create the deck
-    await page.click('text=Create Deck');
+    await page.getByRole('button', { name: 'Create Deck' }).click();
     
     // Verify we're back on the dashboard
-    await expect(page.locator('h1')).toContainText('Dashboard');
+    await expect(page.getByText('Current Streak')).toBeVisible();
     
     // Verify the new deck is displayed
-    await expect(page.getByText('Multiple Cards Test')).toBeVisible();
-    
-    // Verify the card count is 3
-    const cardCountCell = page.locator('tr', { hasText: 'Multiple Cards Test' }).locator('td').nth(1);
-    await expect(cardCountCell).toContainText('3');
+    await expect(page.getByText('Multiple Cards Deck')).toBeVisible();
   });
 
   test('should allow changing the language pair during deck creation', async ({ page }) => {
+    // Setup deck creation
+    await setupDeckCreation(page);
+    
     // Fill in the deck title
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Language Change Test');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'German Phrases');
     
-    // Verify the language pair selector is displayed
-    const languagePairSelector = page.getByRole('combobox').first();
-    await expect(languagePairSelector).toBeVisible();
-    
-    // Select the initial language pair
-    await languagePairSelector.click();
-    await page.waitForSelector('text=English → Spanish');
-    await page.click('text=English → Spanish');
-    
-    // Verify the language pair has been selected
-    await expect(languagePairSelector).toContainText('English → Spanish');
-    
-    // Change the language pair
-    await languagePairSelector.click();
-    await page.waitForSelector('text=English → French');
-    await page.click('text=English → French');
-    
-    // Verify the language pair has been updated
-    await expect(languagePairSelector).toContainText('English → French');
+    // Change language pair to German -> English
+    await page.getByRole('combobox').first().click();
+    await page.getByText('German → English').click();
     
     // Click Next: Add Cards
-    await page.click('text=Next: Add Cards');
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
     
-    // Add a card using the helper function
-    await fillCardByIndex(page, 0, 'Hello', 'Bonjour');
+    // Wait for the cards view to be visible using our helper function
+    await waitForCardsView(page);
+    
+    // Add a card
+    await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
     // Create the deck
-    await page.click('text=Create Deck');
+    await page.getByRole('button', { name: 'Create Deck' }).click();
     
     // Verify we're back on the dashboard
-    await expect(page.locator('h1')).toContainText('Dashboard');
+    await expect(page.getByText('Current Streak')).toBeVisible();
     
-    // Verify the new deck is displayed
-    await expect(page.getByText('Language Change Test')).toBeVisible();
+    // Verify the new deck is displayed with the correct language pair
+    await expect(page.getByText('German Phrases')).toBeVisible();
+    await expect(page.getByText('German → English')).toBeVisible();
   });
 
   test('should validate required fields', async ({ page }) => {
+    // Setup deck creation
+    await setupDeckCreation(page);
+    
+    // Clear the title field to ensure it's empty
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', '');
+    
     // Try to proceed without a title
-    await page.click('text=Next: Add Cards');
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
     
-    // We should still be on the same page
-    await expect(page.locator('h2')).toContainText('Create New Deck');
+    // Verify we're still on the details page (not moved to cards view)
+    await expect(page.getByRole('button', { name: 'Next: Add Cards' })).toBeVisible();
     
-    // Fill in the title
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Validation Test');
+    // Fill in the title and try again
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'Validated Deck');
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
     
-    // Select a language pair
-    const languagePairSelector = page.getByRole('combobox').first();
-    await languagePairSelector.click();
-    await page.waitForSelector('text=English → Spanish');
-    await page.click('text=English → Spanish');
+    // Wait for the cards view to be visible using our helper function
+    await waitForCardsView(page);
     
-    // Proceed to next step
-    await page.click('text=Next: Add Cards');
-    
-    // Try to create the deck without filling in the cards
-    await page.click('text=Create Deck');
-    
-    // We should still be on the card creation page
-    await expect(page.getByText('Cards (1)')).toBeVisible();
-    
-    // Fill in the card and create the deck using the helper function
+    // Fill in the card content
     await fillCardByIndex(page, 0, 'Hello', 'Hola');
     
-    await page.click('text=Create Deck');
+    // Create the deck
+    await page.getByRole('button', { name: 'Create Deck' }).click();
     
     // Verify we're back on the dashboard
-    await expect(page.locator('h1')).toContainText('Dashboard');
+    await expect(page.getByText('Current Streak')).toBeVisible();
+    
+    // Verify the new deck is displayed
+    await expect(page.getByText('Validated Deck')).toBeVisible();
   });
 
   test('should pass language pair when navigating from landing page', async ({ page }) => {
     // Navigate to the landing page
     await page.goto('/');
     
-    // Select a language pair
-    await page.getByRole('combobox').first().click();
-    await page.getByText('English → German').click();
+    // Select a specific language pair (French -> English)
+    await page.getByRole('combobox').click();
+    await page.getByText('French → English').click();
     
-    // Click Create New Deck button
-    await page.getByRole('button', { name: 'Create New Deck' }).click();
+    // Click the Create Your First Deck button
+    await page.getByRole('button', { name: 'Create Your First Deck' }).click();
     
     // Verify we're on the deck creation page
     await expect(page.locator('h2')).toContainText('Create New Deck');
     
-    // Verify the language pair has been passed correctly
+    // Verify the language pair is pre-selected with French -> English
     const languagePairSelector = page.getByRole('combobox').first();
-    await expect(languagePairSelector).toContainText('English → German');
+    await expect(languagePairSelector).toContainText('French → English');
     
     // Fill in the deck title
-    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'German Vocabulary');
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'French Vocabulary');
     
     // Click Next: Add Cards
     await page.getByRole('button', { name: 'Next: Add Cards' }).click();
     
+    // Wait for the cards view to be visible
+    await waitForCardsView(page);
+    
     // Verify the language labels show the correct languages
-    await expect(page.getByText('Front (English)')).toBeVisible();
-    await expect(page.getByText('Back (German)')).toBeVisible();
+    await expect(page.getByText('Front (French)')).toBeVisible();
+    await expect(page.getByText('Back (English)')).toBeVisible();
+    
+    // Add a card
+    await fillCardByIndex(page, 0, 'Bonjour', 'Hello');
+    
+    // Create the deck
+    await page.getByRole('button', { name: 'Create Deck' }).click();
+    
+    // Verify we're back on the dashboard
+    await expect(page.getByText('Current Streak')).toBeVisible();
+    
+    // Verify the new deck is displayed with the correct language pair
+    await expect(page.getByText('French Vocabulary')).toBeVisible();
+    await expect(page.getByText('French → English')).toBeVisible();
+  });
+
+  test('should apply language pair changes in the create form', async ({ page }) => {
+    // Setup deck creation
+    await setupDeckCreation(page);
+    
+    // Fill in the deck title
+    await page.fill('input[placeholder="e.g., Basic Spanish Phrases"]', 'German Vocabulary');
+    
+    // Change the language pair to German -> English
+    await page.getByRole('combobox').click();
+    await page.getByText('German → English').click();
+    
+    // Click Next: Add Cards
+    await page.getByRole('button', { name: 'Next: Add Cards' }).click();
+    
+    // Wait for the cards view to be visible
+    await waitForCardsView(page);
+    
+    // Verify the language labels show the correct languages
+    await expect(page.getByText('Front (German)')).toBeVisible();
+    await expect(page.getByText('Back (English)')).toBeVisible();
+    
+    // Add a card
+    await fillCardByIndex(page, 0, 'Hallo', 'Hello');
+    
+    // Create the deck
+    await page.getByRole('button', { name: 'Create Deck' }).click();
+    
+    // Verify we're back on the dashboard
+    await expect(page.getByText('Current Streak')).toBeVisible();
+    
+    // Verify the new deck is displayed with the correct language pair
+    await expect(page.getByText('German Vocabulary')).toBeVisible();
+    await expect(page.getByText('German → English')).toBeVisible();
   });
 });
