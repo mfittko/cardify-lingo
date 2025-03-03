@@ -1,9 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* postcss-import */
+/* tailwindcss */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -77,6 +78,15 @@
   }
 }
 
+/* Reset margins and padding */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -84,6 +94,9 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-image: none !important; /* Remove any background patterns */
+    margin: 0;
+    padding: 0;
   }
 
   h1 {
@@ -105,6 +118,21 @@
   p {
     @apply leading-7;
   }
+}
+
+/* Fix for background pattern issue */
+.bg-gradient-to-b {
+  background-image: linear-gradient(to bottom, var(--tw-gradient-stops)) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Ensure full page coverage */
+#root {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .perspective {

@@ -32,6 +32,7 @@ export interface Settings {
   streak: number;
   lastStreakUpdate: number;
   totalCardsStudied: number;
+  lastStudyDate?: number;
   openAIKey?: string;
   elevenLabsKey?: string;
 }
@@ -109,6 +110,23 @@ export const deleteDeck = (deckId: string): void => {
   }
 };
 
+// Delete multiple decks
+export const deleteDecks = (deckIds: string[]): void => {
+  try {
+    let decks = loadDecks();
+    decks = decks.filter((deck) => !deckIds.includes(deck.id));
+    saveDecks(decks);
+  } catch (error) {
+    console.error(`Error deleting decks from storage:`, error);
+  }
+};
+
+// Get count of due cards in a deck
+export const getDueCardsCount = (cards: Card[]): number => {
+  const now = Date.now();
+  return cards.filter(card => card.dueDate <= now).length;
+};
+
 // Load user settings
 export const loadSettings = (): Settings => {
   try {
@@ -164,4 +182,33 @@ export const updateStreak = (): number => {
 // Generate a unique ID
 export const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+};
+
+// Get language example for card placeholders
+export const getLanguageExample = (sourceLang: string, targetLang: string): { front: string; back: string } => {
+  // Default example
+  let example = { front: "Hello", back: "Hola" };
+  
+  // Language-specific examples
+  if (sourceLang === "English" && targetLang === "Spanish") {
+    example = { front: "Hello", back: "Hola" };
+  } else if (sourceLang === "English" && targetLang === "French") {
+    example = { front: "Hello", back: "Bonjour" };
+  } else if (sourceLang === "English" && targetLang === "German") {
+    example = { front: "Hello", back: "Hallo" };
+  } else if (sourceLang === "English" && targetLang === "Italian") {
+    example = { front: "Hello", back: "Ciao" };
+  } else if (sourceLang === "English" && targetLang === "Japanese") {
+    example = { front: "Hello", back: "こんにちは" };
+  } else if (sourceLang === "English" && targetLang === "Chinese") {
+    example = { front: "Hello", back: "你好" };
+  } else if (sourceLang === "Spanish" && targetLang === "English") {
+    example = { front: "Hola", back: "Hello" };
+  } else if (sourceLang === "French" && targetLang === "English") {
+    example = { front: "Bonjour", back: "Hello" };
+  } else if (sourceLang === "German" && targetLang === "English") {
+    example = { front: "Hallo", back: "Hello" };
+  }
+  
+  return example;
 };
