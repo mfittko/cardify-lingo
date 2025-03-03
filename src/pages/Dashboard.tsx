@@ -21,7 +21,6 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
   const [totalStudied, setTotalStudied] = useState(0);
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -107,10 +106,12 @@ const Dashboard = () => {
       <div className="flex justify-between items-center mb-6">
         <Logo />
         <div className="flex gap-2">
-          <Button onClick={() => setShowSettingsDialog(true)} variant="outline" size="icon">
-            <SettingsIcon className="h-5 w-5" />
-            <span className="sr-only">Settings</span>
-          </Button>
+          <SettingsDialog>
+            <Button variant="outline" size="icon">
+              <SettingsIcon className="h-5 w-5" />
+              <span className="sr-only">Settings</span>
+            </Button>
+          </SettingsDialog>
           <Button onClick={handleCreateDeck}>
             <Plus className="mr-2 h-4 w-4" /> Create Deck
           </Button>
@@ -357,11 +358,6 @@ const Dashboard = () => {
           )}
         </TabsContent>
       </Tabs>
-      
-      <SettingsDialog 
-        open={showSettingsDialog} 
-        onOpenChange={setShowSettingsDialog} 
-      />
     </div>
   );
 };
