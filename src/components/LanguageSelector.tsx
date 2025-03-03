@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { loadSettings } from "@/utils/storage";
 
 // Supported language pairs
 const languagePairs = [
@@ -39,15 +40,35 @@ const languagePairs = [
 interface LanguageSelectorProps {
   onSelect: (languagePair: { id: string; source: string; target: string }) => void;
   className?: string;
+  initialValue?: { id: string; source: string; target: string } | null;
 }
 
-const LanguageSelector = ({ onSelect, className }: LanguageSelectorProps) => {
+const LanguageSelector = ({ onSelect, className, initialValue }: LanguageSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [selectedLanguagePair, setSelectedLanguagePair] = useState<{
     id: string;
     source: string;
     target: string;
-  } | null>(null);
+  } | null>(initialValue || null);
+
+  // Initialize from settings if no initialValue is provided
+  useEffect(() => {
+    if (!selectedLanguagePair) {
+      const settings = loadSettings();
+      if (settings.selectedLanguagePair) {
+        setSelectedLanguagePair(settings.selectedLanguagePair);
+        // Also notify parent component
+        onSelect(settings.selectedLanguagePair);
+      }
+    }
+  }, [selectedLanguagePair, onSelect]);
+
+  // Update if initialValue changes
+  useEffect(() => {
+    if (initialValue) {
+      setSelectedLanguagePair(initialValue);
+    }
+  }, [initialValue]);
 
   const handleSelect = (pair: { id: string; source: string; target: string }) => {
     setSelectedLanguagePair(pair);

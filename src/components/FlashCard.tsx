@@ -1,9 +1,10 @@
-
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Volume } from "lucide-react";
 import { toast } from "sonner";
+import { loadSettings } from "@/utils/storage";
+import { generateCacheKey, getCachedAudio, cacheAudio } from "@/utils/audioCache";
 
 interface FlashCardProps {
   front: string;
@@ -39,17 +40,18 @@ const FlashCard = ({
     // Reset flip state when card changes
     setIsFlipped(false);
     setHasBeenFlipped(false);
-  }, [front, back]);
+  }, [front, back, isInitialRender]);
 
-  const playAudio = () => {
+  const playAudio = async () => {
     if (audio && audioRef.current) {
       audioRef.current.play().catch(error => {
         console.error("Error playing audio:", error);
       });
     } else {
       // Use ElevenLabs for text-to-speech
-      const settings = JSON.parse(localStorage.getItem("lingua_settings") || "{}");
+      const settings = loadSettings();
       const elevenLabsKey = settings.elevenLabsKey;
+      const voiceId = settings.elevenLabsVoiceId || "EXAVITQu4vr4xnSDxMaL"; // Use default if not set
       
       if (!elevenLabsKey) {
         toast.error("Please add your ElevenLabs API key in settings");
@@ -58,29 +60,62 @@ const FlashCard = ({
       
       setIsSpeaking(true);
       
-      // Use ElevenLabs API to convert text to speech
-      fetch("https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL/stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "xi-api-key": elevenLabsKey
-        },
-        body: JSON.stringify({
-          text: isFlipped ? back : front,
-          model_id: "eleven_multilingual_v2",
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75
-          }
-        })
-      })
-      .then(response => {
+      // Text to be spoken
+      const textToSpeak = isFlipped ? back : front;
+      
+      // Generate a cache key for this audio
+      const cacheKey = generateCacheKey(
+        textToSpeak,
+        voiceId,
+        "eleven_multilingual_v2",
+        language
+      );
+      
+      // Check if we have this audio in cache
+      const cachedBlob = getCachedAudio(cacheKey);
+      
+      if (cachedBlob) {
+        // Use cached audio
+        const url = URL.createObjectURL(cachedBlob);
+        const audio = new Audio(url);
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(url);
+        };
+        audio.play();
+        return;
+      }
+      
+      // Not in cache, fetch from ElevenLabs API
+      try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": elevenLabsKey
+          },
+          body: JSON.stringify({
+            text: textToSpeak,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75
+            },
+            pronunciation_dictionary_locators: [],
+            text_language: language
+          })
+        });
+        
         if (!response.ok) {
           throw new Error("Failed to generate speech");
         }
-        return response.blob();
-      })
-      .then(blob => {
+        
+        const blob = await response.blob();
+        
+        // Cache the audio for future use
+        await cacheAudio(cacheKey, blob);
+        
+        // Play the audio
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         audio.onended = () => {
@@ -88,12 +123,11 @@ const FlashCard = ({
           URL.revokeObjectURL(url);
         };
         audio.play();
-      })
-      .catch(error => {
+      } catch (error) {
         console.error("Error generating speech:", error);
         toast.error("Failed to generate speech. Please check your API key.");
         setIsSpeaking(false);
-      });
+      }
     }
   };
 
