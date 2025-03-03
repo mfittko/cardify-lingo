@@ -61,6 +61,24 @@ const DeckCreation = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showKeyDialog, setShowKeyDialog] = useState(false);
 
+  const handleLanguageChange = (source: string, target: string) => {
+    setLanguagePair({
+      id: `${source.toLowerCase()}-${target.toLowerCase()}`,
+      source,
+      target
+    });
+    
+    // Save language selection to settings
+    const updatedSettings = loadSettings();
+    updatedSettings.selectedLanguagePair = {
+      id: `${source.toLowerCase()}-${target.toLowerCase()}`,
+      source,
+      target
+    };
+    saveSettings(updatedSettings);
+    setSettings(updatedSettings);
+  };
+
   const handleLanguageSelect = (selectedPair: {
     id: string;
     source: string;
@@ -248,168 +266,176 @@ const DeckCreation = () => {
       
       <h2 className="text-3xl font-bold mb-6">Create New Deck</h2>
       
-      <AnimatePresence mode="wait">
-        {currentView === "details" && (
-          <motion.div 
-            key="details"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
-          >
-            <Card>
-              <CardContent className="p-6 space-y-4">
+      {currentView === "details" ? (
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card>
+            <CardContent className="pt-6">
+              <form className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Deck Title</Label>
-                  <Input 
-                    id="title" 
-                    value={title} 
-                    onChange={(e) => setTitle(e.target.value)} 
-                    placeholder="e.g., Basic Spanish Phrases"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (Optional)</Label>
-                  <Textarea 
-                    id="description" 
-                    value={description} 
-                    onChange={(e) => setDescription(e.target.value)} 
-                    placeholder="What will you learn with this deck?"
+                  <Input
+                    id="title"
+                    placeholder="e.g., Spanish Vocabulary"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="languagePair">Language Pair</Label>
-                  <LanguageSelector 
-                    onLanguageChange={(source, target) => {
-                      handleLanguageSelect({
-                        id: `${source}-${target}`.toLowerCase(),
-                        source,
-                        target
-                      });
-                    }}
-                    className="w-full"
-                    selectedSource={languagePair?.source || ""}
-                    selectedTarget={languagePair?.target || ""}
+                  <Label htmlFor="description">Description (Optional)</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="What is this deck about?"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
                   />
-                  {!languagePair && (
-                    <p className="text-sm text-red-500 flex items-center mt-1">
-                      <AlertCircle className="h-4 w-4 mr-1" /> Please select a language pair
-                    </p>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Button className="w-full" onClick={handleDetailsNext}>
-              Next: Add Cards
-            </Button>
-          </motion.div>
-        )}
-        
-        {currentView === "cards" && (
-          <motion.div 
-            key="cards"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
-          >
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-medium">Cards ({cardForms.length})</h2>
-              <div className="flex gap-2">
+                
+                <div className="space-y-2">
+                  <Label>Language Pair</Label>
+                  <LanguageSelector
+                    selectedSource={languagePair?.source}
+                    selectedTarget={languagePair?.target}
+                    onLanguageChange={handleLanguageChange}
+                    onSelect={handleLanguageSelect}
+                    initialValue={languagePair}
+                  />
+                </div>
+                
                 <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateCards}
-                  disabled={isGenerating}
+                  type="button" 
+                  className="w-full" 
+                  onClick={handleDetailsNext}
                 >
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4 mr-2" />
-                  )}
-                  Auto-Generate
+                  Next: Add Cards
                 </Button>
-                <Button variant="outline" size="sm" onClick={addCard}>
-                  <Plus className="h-4 w-4 mr-2" /> Add Card
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {cardForms.map((card, index) => (
-                <Card key={index} className="relative overflow-hidden">
-                  <CardContent className="p-6 space-y-4 pt-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Card {index + 1}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7" 
-                        onClick={() => removeCard(index)}
-                      >
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Remove card</span>
-                      </Button>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor={`card-front-${index}`}>
-                        Front ({languagePair?.source})
-                      </Label>
-                      <Input 
-                        id={`card-front-${index}`} 
-                        value={card.front} 
-                        onChange={(e) => updateCard(index, "front", e.target.value)} 
-                        placeholder={languagePair ? `e.g., ${getLanguageExample(languagePair.source, languagePair.target).front}` : "e.g., Front side"}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor={`card-back-${index}`}>
-                        Back ({languagePair?.target})
-                      </Label>
-                      <Input 
-                        id={`card-back-${index}`} 
-                        value={card.back} 
-                        onChange={(e) => updateCard(index, "back", e.target.value)} 
-                        placeholder={languagePair ? `e.g., ${getLanguageExample(languagePair.source, languagePair.target).back}` : "e.g., Back side"}
-                      />
-                    </div>
-                    
-                    <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm" disabled className="text-muted-foreground">
-                        <ImageIcon className="h-4 w-4 mr-2" /> Add Image
-                      </Button>
-                      <Button variant="outline" size="sm" disabled className="text-muted-foreground">
-                        <Volume className="h-4 w-4 mr-2" /> Add Audio
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            
-            <div className="space-y-4 pt-4">
-              <Button className="w-full" onClick={handleSubmit}>
-                Create Deck
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">Add Flashcards</h3>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGenerateCards}
+                disabled={isGenerating || !languagePair}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Cards
+                  </>
+                )}
               </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                You can add more cards or edit this deck later
-              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={addCard}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Card
+              </Button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+          
+          <div className="space-y-4 mb-6">
+            <AnimatePresence>
+              {cardForms.map((card, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-medium">Card {index + 1}</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCard(index)}
+                          disabled={cardForms.length === 1}
+                        >
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Remove</span>
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`front-${index}`}>
+                            {languagePair ? languagePair.source : "Front"}
+                          </Label>
+                          <Input
+                            id={`front-${index}`}
+                            placeholder={`Term in ${languagePair?.source || "source language"}`}
+                            value={card.front}
+                            onChange={(e) => updateCard(index, "front", e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`back-${index}`}>
+                            {languagePair ? languagePair.target : "Back"}
+                          </Label>
+                          <Input
+                            id={`back-${index}`}
+                            placeholder={`Translation in ${languagePair?.target || "target language"}`}
+                            value={card.back}
+                            onChange={(e) => updateCard(index, "back", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setCurrentView("details")}
+            >
+              Back
+            </Button>
+            <Button onClick={handleSubmit}>
+              Create Deck
+            </Button>
+          </div>
+        </motion.div>
+      )}
+      
       <AIKeyDialog 
-        open={showKeyDialog}
-        onOpenChange={setShowKeyDialog}
-        onKeySaved={handleGenerateCards}
+        open={showKeyDialog} 
+        onOpenChange={setShowKeyDialog} 
+        onKeySaved={() => {
+          setShowKeyDialog(false);
+          handleGenerateCards();
+        }}
       />
     </div>
   );

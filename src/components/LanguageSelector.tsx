@@ -38,9 +38,10 @@ const languagePairs = [
 ];
 
 interface LanguageSelectorProps {
-  selectedSource: string;
-  selectedTarget: string;
-  onLanguageChange: (source: string, target: string) => void;
+  selectedSource?: string;
+  selectedTarget?: string;
+  onLanguageChange?: (source: string, target: string) => void;
+  onSelect?: (pair: { id: string; source: string; target: string }) => void;
   className?: string;
   initialValue?: { id: string; source: string; target: string } | null;
 }
@@ -49,36 +50,91 @@ const LanguageSelector = ({
   selectedSource, 
   selectedTarget, 
   onLanguageChange, 
+  onSelect,
   className,
   initialValue
 }: LanguageSelectorProps) => {
   const [open, setOpen] = useState(false);
+  const [selectedLanguagePair, setSelectedLanguagePair] = useState<{
+    id: string;
+    source: string;
+    target: string;
+  } | null>(initialValue || null);
+
+  // Initialize from settings if no initialValue is provided
+  useEffect(() => {
+    if (!selectedLanguagePair && !selectedSource && !selectedTarget) {
+      const settings = loadSettings();
+      if (settings.selectedLanguagePair) {
+        setSelectedLanguagePair(settings.selectedLanguagePair);
+        // Also notify parent component
+        if (onSelect) {
+          onSelect(settings.selectedLanguagePair);
+        }
+        if (onLanguageChange) {
+          onLanguageChange(settings.selectedLanguagePair.source, settings.selectedLanguagePair.target);
+        }
+      }
+    }
+  }, [selectedLanguagePair, onSelect, onLanguageChange, selectedSource, selectedTarget]);
 
   // Use initialValue if provided
   useEffect(() => {
     if (initialValue && initialValue.source && initialValue.target) {
-      // Only call onLanguageChange if the values are different from current selection
-      // This prevents the infinite update loop
-      if (initialValue.source !== selectedSource || initialValue.target !== selectedTarget) {
+      setSelectedLanguagePair(initialValue);
+      // Only call callbacks if the values are different from current selection
+      if (onLanguageChange && (initialValue.source !== selectedSource || initialValue.target !== selectedTarget)) {
         onLanguageChange(initialValue.source, initialValue.target);
       }
+      if (onSelect) {
+        onSelect(initialValue);
+      }
     }
-  }, [initialValue, onLanguageChange, selectedSource, selectedTarget]);
+  }, [initialValue, onLanguageChange, onSelect, selectedSource, selectedTarget]);
 
   const handleSelect = (pair: { id: string; source: string; target: string }) => {
     setOpen(false);
-    onLanguageChange(pair.source, pair.target);
+    setSelectedLanguagePair(pair);
+    
+    if (onLanguageChange) {
+      onLanguageChange(pair.source, pair.target);
+    }
+    
+    if (onSelect) {
+      onSelect(pair);
+    }
   };
 
   // Find the current pair ID based on source and target
   const getCurrentPairId = () => {
-    const pair = languagePairs.find(
-      p => p.source === selectedSource && p.target === selectedTarget
-    );
-    return pair ? pair.id : null;
+    if (selectedLanguagePair) {
+      return selectedLanguagePair.id;
+    }
+    
+    if (selectedSource && selectedTarget) {
+      const pair = languagePairs.find(
+        p => p.source === selectedSource && p.target === selectedTarget
+      );
+      return pair ? pair.id : null;
+    }
+    
+    return null;
   };
 
   const currentPairId = getCurrentPairId();
+  
+  // Determine what to display in the button
+  const getDisplayText = () => {
+    if (selectedLanguagePair) {
+      return `${selectedLanguagePair.source} → ${selectedLanguagePair.target}`;
+    }
+    
+    if (selectedSource && selectedTarget) {
+      return `${selectedSource} → ${selectedTarget}`;
+    }
+    
+    return "Select language pair...";
+  };
 
   return (
     <div className={`language-selector ${className || ''}`}>
@@ -90,9 +146,7 @@ const LanguageSelector = ({
             aria-expanded={open}
             className="w-full justify-between border-indigo-200 bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 h-12"
           >
-            {selectedSource && selectedTarget
-              ? `${selectedSource} → ${selectedTarget}`
-              : "Select language pair..."}
+            {getDisplayText()}
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>

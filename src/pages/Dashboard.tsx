@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Settings as SettingsIcon, BookOpen, Calendar, BarChart, Clock, Trash2, Edit, Search } from "lucide-react";
-import { loadDecks, loadSettings, deleteDecks, getDueCardsCount, type Deck } from "@/utils/storage";
+import { loadAllDecks, loadSettings, deleteDecks, getDueCardsCount, type Deck } from "@/utils/storage";
 import { getDueCards } from "@/utils/spacedRepetition";
 import { formatDistanceToNow } from "date-fns";
 import { SettingsDialog } from "@/components/SettingsDialog";
@@ -32,7 +32,7 @@ const Dashboard = () => {
     setIsLoading(true);
     
     // Load decks
-    const allDecks = loadDecks();
+    const allDecks = loadAllDecks();
     
     // Sort decks by last studied date (most recent first)
     allDecks.sort((a, b) => {
@@ -247,14 +247,6 @@ const Dashboard = () => {
                             <Button 
                               variant="outline" 
                               size="icon"
-                              onClick={() => handleViewStats(deck.id)}
-                            >
-                              <BarChart className="h-4 w-4" />
-                              <span className="sr-only">Stats</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="icon"
                               onClick={() => handleDeleteDeck(deck.id)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -282,7 +274,7 @@ const Dashboard = () => {
             </Card>
           ) : (
             <Card>
-              <Table data-testid="decks-table">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
@@ -307,11 +299,7 @@ const Dashboard = () => {
                         </TableCell>
                         <TableCell>{deck.cards.length}</TableCell>
                         <TableCell>
-                          {dueCount > 0 ? (
-                            <Badge variant="secondary">{dueCount}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
+                          <Badge variant="secondary">{dueCount}</Badge>
                         </TableCell>
                         <TableCell>
                           {deck.lastStudied ? formatDistanceToNow(deck.lastStudied, { addSuffix: true }) : 'Never'}
@@ -337,14 +325,6 @@ const Dashboard = () => {
                             <Button 
                               variant="outline" 
                               size="icon"
-                              onClick={() => handleViewStats(deck.id)}
-                            >
-                              <BarChart className="h-4 w-4" />
-                              <span className="sr-only">Stats</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="icon"
                               onClick={() => handleDeleteDeck(deck.id)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -361,13 +341,11 @@ const Dashboard = () => {
           )}
         </TabsContent>
       </Tabs>
-
-      {showSettingsDialog && (
-        <SettingsDialog
-          open={showSettingsDialog}
-          onOpenChange={setShowSettingsDialog}
-        />
-      )}
+      
+      <SettingsDialog 
+        open={showSettingsDialog} 
+        onOpenChange={setShowSettingsDialog} 
+      />
     </div>
   );
 };

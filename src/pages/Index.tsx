@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import LanguageSelector from '@/components/LanguageSelector';
-import { languageExamples, generateId, saveSettings, loadSettings, loadDecks } from '@/utils/storage';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import LanguageSelector from "@/components/LanguageSelector";
+import { generateId, saveSettings, loadSettings, loadAllDecks } from "@/utils/storage";
+import { motion } from "framer-motion";
 
-export default function Index() {
+const Index = () => {
   const navigate = useNavigate();
   const settings = loadSettings();
   const [selectedLanguagePair, setSelectedLanguagePair] = useState(
@@ -16,14 +16,16 @@ export default function Index() {
       target: 'Spanish' 
     }
   );
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check if any decks exist on component mount
   useEffect(() => {
-    const decks = loadDecks();
+    const decks = loadAllDecks();
     // If user already has decks, redirect to dashboard
     if (decks.length > 0) {
       navigate('/dashboard');
     }
+    setIsLoading(false);
   }, [navigate]);
 
   const handleLanguageChange = (source: string, target: string) => {
@@ -32,6 +34,23 @@ export default function Index() {
       source,
       target
     });
+  };
+
+  const handleLanguageSelect = (selectedPair: {
+    id: string;
+    source: string;
+    target: string;
+  }) => {
+    setSelectedLanguagePair(selectedPair);
+    
+    // Save language selection to settings
+    const settings = loadSettings();
+    settings.selectedLanguagePair = {
+      id: selectedPair.id,
+      source: selectedPair.source,
+      target: selectedPair.target
+    };
+    saveSettings(settings);
   };
 
   const handleContinue = () => {
@@ -47,6 +66,26 @@ export default function Index() {
       state: { selectedLanguagePair }
     });
   };
+
+  const handleCreateDeck = () => {
+    if (selectedLanguagePair) {
+      navigate("/create", { state: { selectedLanguagePair } });
+    }
+  };
+
+  const handleViewDashboard = () => {
+    if (selectedLanguagePair) {
+      navigate("/dashboard");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-indigo-50 to-blue-100 flex flex-col items-center justify-center p-4 absolute inset-0 m-0">
@@ -74,15 +113,24 @@ export default function Index() {
               selectedSource={selectedLanguagePair.source}
               selectedTarget={selectedLanguagePair.target}
               onLanguageChange={handleLanguageChange}
+              onSelect={handleLanguageSelect}
+              initialValue={selectedLanguagePair}
               className="mb-6"
             />
             
-            <div className="mt-8">
+            <div className="mt-8 space-y-3">
               <Button 
                 className="w-full bg-indigo-600 hover:bg-indigo-700 py-6 text-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg" 
-                onClick={handleContinue}
+                onClick={handleCreateDeck}
               >
                 Create Your First Deck
+              </Button>
+              <Button 
+                variant="outline"
+                className="w-full" 
+                onClick={handleViewDashboard}
+              >
+                View Dashboard
               </Button>
             </div>
           </CardContent>
@@ -90,4 +138,6 @@ export default function Index() {
       </motion.div>
     </div>
   );
-}
+};
+
+export default Index;
