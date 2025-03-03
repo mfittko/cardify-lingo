@@ -239,6 +239,14 @@ const Dashboard = () => {
                             <Button 
                               variant="outline" 
                               size="icon"
+                              onClick={() => handleViewStats(deck.id)}
+                            >
+                              <BarChart className="h-4 w-4" />
+                              <span className="sr-only">View statistics</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
                               onClick={() => handleEditDeck(deck.id)}
                             >
                               <Edit className="h-4 w-4" />
@@ -313,6 +321,14 @@ const Dashboard = () => {
                             >
                               <BookOpen className="h-4 w-4" />
                               <span className="sr-only">Study</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleViewStats(deck.id)}
+                            >
+                              <BarChart className="h-4 w-4" />
+                              <span className="sr-only">View statistics</span>
                             </Button>
                             <Button 
                               variant="outline" 
