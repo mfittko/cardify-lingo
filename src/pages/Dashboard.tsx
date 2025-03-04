@@ -12,15 +12,15 @@ import { getDueCards } from "@/utils/spacedRepetition";
 import { formatDistanceToNow } from "date-fns";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { Input } from "@/components/ui/input";
+import Logo from "@/components/Logo";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [decks, setDecks] = useState<Deck[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<string>("due");
   const [isLoading, setIsLoading] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
   const [totalStudied, setTotalStudied] = useState(0);
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -104,12 +104,14 @@ const Dashboard = () => {
   return (
     <div className="container max-w-5xl px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <Logo />
         <div className="flex gap-2">
-          <Button onClick={() => setShowSettingsDialog(true)} variant="outline" size="icon">
-            <SettingsIcon className="h-5 w-5" />
-            <span className="sr-only">Settings</span>
-          </Button>
+          <SettingsDialog>
+            <Button variant="outline" size="icon">
+              <SettingsIcon className="h-5 w-5" />
+              <span className="sr-only">Settings</span>
+            </Button>
+          </SettingsDialog>
           <Button onClick={handleCreateDeck}>
             <Plus className="mr-2 h-4 w-4" /> Create Deck
           </Button>
@@ -118,20 +120,19 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <Calendar className="h-5 w-5 text-muted-foreground mr-2" />
-              <span className="text-2xl font-bold">{streakCount} days</span>
-            </div>
+          <CardContent data-testid="dashboard-stats">
+            <div className="text-2xl font-bold">{streakCount} days</div>
+            <p className="text-xs text-muted-foreground">Keep studying daily to increase your streak!</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Cards Due Today</CardTitle>
+            <CardTitle className="text-sm font-medium text-left">Cards Due Today</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center">
@@ -145,7 +146,7 @@ const Dashboard = () => {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Cards Studied</CardTitle>
+            <CardTitle className="text-sm font-medium text-left">Total Cards Studied</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center">
@@ -156,8 +157,20 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <div className="flex items-center mb-6">
-        <div className="relative w-full max-w-sm">
+      {/* Search and tabs layout */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="due">
+              Due for Review
+            </TabsTrigger>
+            <TabsTrigger value="all">
+              All Decks
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        <div className="relative w-full sm:max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
@@ -169,17 +182,9 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <Tabs 
-        defaultValue="all" 
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="mb-8"
-      >
-        <TabsList>
-          <TabsTrigger value="all">All Decks</TabsTrigger>
-          <TabsTrigger value="due">Due for Review</TabsTrigger>
-        </TabsList>
-        <TabsContent value="all" className="mt-6">
+      {/* Table content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <TabsContent value="all">
           {filteredDecks.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center">
@@ -191,7 +196,7 @@ const Dashboard = () => {
             </Card>
           ) : (
             <Card>
-              <Table>
+              <Table data-testid="decks-table">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
@@ -239,18 +244,18 @@ const Dashboard = () => {
                             <Button 
                               variant="outline" 
                               size="icon"
-                              onClick={() => handleEditDeck(deck.id)}
+                              onClick={() => handleViewStats(deck.id)}
                             >
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
+                              <BarChart className="h-4 w-4" />
+                              <span className="sr-only">View statistics</span>
                             </Button>
                             <Button 
                               variant="outline" 
                               size="icon"
-                              onClick={() => handleViewStats(deck.id)}
+                              onClick={() => handleEditDeck(deck.id)}
                             >
-                              <BarChart className="h-4 w-4" />
-                              <span className="sr-only">Stats</span>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
                             </Button>
                             <Button 
                               variant="outline" 
@@ -270,11 +275,15 @@ const Dashboard = () => {
             </Card>
           )}
         </TabsContent>
-        <TabsContent value="due" className="mt-6">
+        
+        <TabsContent value="due">
           {filteredDecks.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center">
-                <p className="text-muted-foreground">No decks due for review</p>
+                <p className="text-muted-foreground mb-4">No cards due for review</p>
+                <Button onClick={() => setActiveTab("all")}>
+                  View All Decks
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -310,14 +319,40 @@ const Dashboard = () => {
                           {deck.lastStudied ? formatDistanceToNow(deck.lastStudied, { addSuffix: true }) : 'Never'}
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleStudyDeck(deck.id)}
-                          >
-                            <BookOpen className="mr-2 h-4 w-4" />
-                            Study Now
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              onClick={() => handleStudyDeck(deck.id)}
+                            >
+                              <BookOpen className="h-4 w-4" />
+                              <span className="sr-only">Study</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleViewStats(deck.id)}
+                            >
+                              <BarChart className="h-4 w-4" />
+                              <span className="sr-only">View statistics</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleEditDeck(deck.id)}
+                            >
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleDeleteDeck(deck.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -328,7 +363,6 @@ const Dashboard = () => {
           )}
         </TabsContent>
       </Tabs>
-      <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
     </div>
   );
 };

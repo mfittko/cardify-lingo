@@ -6,13 +6,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { KeyRound, Trash2, Database } from "lucide-react";
+import { KeyRound, Trash2, Database, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
-import { loadSettings, saveSettings } from "@/utils/storage";
+import { Settings, loadSettings, saveSettings } from "@/utils/storage";
+import { NotificationSettings } from './NotificationSettings';
 import { 
   clearAudioCache, 
   getAudioCacheStats, 
@@ -35,8 +38,9 @@ import {
 } from "@/components/ui/accordion";
 
 interface SettingsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 // ElevenLabs voice options
@@ -83,13 +87,16 @@ const formatRelativeTime = (timestamp: number | null) => {
   return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
 };
 
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+export function SettingsDialog({ children, open, onOpenChange }: SettingsDialogProps) {
   const settings = loadSettings();
+  const [openAIKey, setOpenAIKey] = useState(settings.openAIKey || '');
   const [elevenLabsKey, setElevenLabsKey] = useState(settings.elevenLabsKey || "");
   const [selectedVoiceId, setSelectedVoiceId] = useState(settings.elevenLabsVoiceId || "EXAVITQu4vr4xnSDxMaL");
   const [isLoading, setIsLoading] = useState(false);
   const [isTestingVoice, setIsTestingVoice] = useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("api-keys");
   const [cacheStats, setCacheStats] = useState<{
     entryCount: number;
     totalSize: number;
@@ -98,34 +105,58 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   // Load cache stats when dialog opens
   useEffect(() => {
-    if (open) {
+    if (open || internalOpen) {
       const stats = getAudioCacheStats();
       setCacheStats(stats);
     }
-  }, [open]);
+  }, [open, internalOpen]);
 
-  const handleSaveKey = () => {
-    if (!elevenLabsKey.trim()) {
-      toast.error("Please enter an API key");
-      return;
+  const isControlled = open !== undefined && onOpenChange !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
+      // Load settings when dialog opens
+      const settings = loadSettings();
+      setOpenAIKey(settings.openAIKey || '');
+      setElevenLabsKey(settings.elevenLabsKey || '');
+      setSelectedVoiceId(settings.elevenLabsVoiceId || 'EXAVITQu4vr4xnSDxMaL');
+      
+      // Load cache stats
+      const stats = getAudioCacheStats();
+      setCacheStats(stats);
     }
+    
+    if (isControlled) {
+      onOpenChange(newOpen);
+    } else {
+      setInternalOpen(newOpen);
+    }
+  };
 
+  const saveApiKeys = () => {
     setIsLoading(true);
     
     try {
-      // Update settings with the ElevenLabs API key and voice ID
-      const updatedSettings = {
+      // Update settings with the API keys and voice ID
+      const updatedSettings: Settings = {
         ...settings,
+        openAIKey: openAIKey.trim(),
         elevenLabsKey: elevenLabsKey.trim(),
         elevenLabsVoiceId: selectedVoiceId
       };
       
       saveSettings(updatedSettings);
       toast.success("Settings saved successfully");
-      onOpenChange(false);
+      
+      if (isControlled) {
+        onOpenChange(false);
+      } else {
+        setInternalOpen(false);
+      }
     } catch (error) {
+      console.error("Error saving settings:", error);
       toast.error("Failed to save settings");
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -206,6 +237,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     } catch (error) {
       console.error("Error testing voice:", error);
       toast.error("Failed to test voice. Please check your API key.");
+    } finally {
       setIsTestingVoice(false);
     }
   };
@@ -226,110 +258,177 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      {children ? (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      ) : (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="icon">
+            <SettingsIcon className="h-5 w-5" />
+            <span className="sr-only">Settings</span>
+          </Button>
+        </DialogTrigger>
+      )}
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Application Settings</DialogTitle>
+          <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
-            Configure your application settings here. Your API keys are stored
-            locally on your device and never sent to our servers.
+            Configure your API keys and application preferences
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="elevenLabsKey">ElevenLabs API Key</Label>
-            <Input
-              id="elevenLabsKey"
-              type="password"
-              placeholder="Enter your ElevenLabs API key"
-              value={elevenLabsKey}
-              onChange={(e) => setElevenLabsKey(e.target.value)}
-            />
-            <p className="text-sm text-muted-foreground">
-              <KeyRound className="h-3 w-3 inline mr-1" />
-              Get your API key from <a href="https://elevenlabs.io/app" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ElevenLabs</a>
-            </p>
-          </div>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <TabsList className="grid grid-cols-3">
+            <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+            <TabsTrigger value="audio">Audio</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          </TabsList>
           
-          <div className="grid gap-2">
-            <Label htmlFor="voiceSelect">Voice</Label>
-            <div className="flex gap-2">
-              <Select 
-                value={selectedVoiceId} 
-                onValueChange={setSelectedVoiceId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a voice" />
-                </SelectTrigger>
-                <SelectContent>
-                  {VOICE_OPTIONS.map(voice => (
-                    <SelectItem key={voice.id} value={voice.id}>
-                      {voice.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button 
-                variant="outline" 
-                onClick={testVoice} 
-                disabled={isTestingVoice || !elevenLabsKey}
-                className={isTestingVoice ? "animate-pulse" : ""}
-              >
-                {isTestingVoice ? "Playing..." : "Test"}
-              </Button>
-            </div>
-          </div>
-          
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="cache">
-              <AccordionTrigger className="text-sm font-medium">
-                <div className="flex items-center gap-2">
-                  <Database className="h-4 w-4" />
-                  Audio Cache Management
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4 pt-2">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-muted-foreground">Cached items:</div>
-                    <div>{cacheStats.entryCount}</div>
-                    
-                    <div className="text-muted-foreground">Total size:</div>
-                    <div>{formatBytes(cacheStats.totalSize)}</div>
-                    
-                    <div className="text-muted-foreground">Oldest item:</div>
-                    <div>{formatRelativeTime(cacheStats.oldestEntry)}</div>
-                  </div>
-                  
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleClearCache}
-                    disabled={isClearingCache || cacheStats.entryCount === 0}
+          <TabsContent value="api-keys" className="space-y-4 mt-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="openai-key" className="flex items-center">
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  OpenAI API Key
+                </Label>
+                <Input
+                  id="openai-key"
+                  type="password"
+                  placeholder="sk-..."
+                  value={openAIKey}
+                  onChange={(e) => setOpenAIKey(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required for AI-generated flashcards. Get your key at{" "}
+                  <a
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {isClearingCache ? "Clearing..." : "Clear Audio Cache"}
+                    platform.openai.com
+                  </a>
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="elevenlabs-key" className="flex items-center">
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  ElevenLabs API Key
+                </Label>
+                <Input
+                  id="elevenlabs-key"
+                  type="password"
+                  placeholder="..."
+                  value={elevenLabsKey}
+                  onChange={(e) => setElevenLabsKey(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required for text-to-speech. Get your key at{" "}
+                  <a
+                    href="https://elevenlabs.io/app/api-key"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    elevenlabs.io
+                  </a>
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="voice-id" className="flex items-center">
+                  Voice
+                </Label>
+                <Select
+                  value={selectedVoiceId}
+                  onValueChange={setSelectedVoiceId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VOICE_OPTIONS.map((voice) => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={testVoice}
+                    disabled={isTestingVoice || !elevenLabsKey}
+                  >
+                    {isTestingVoice ? "Testing..." : "Test Voice"}
                   </Button>
-                  
-                  <p className="text-xs text-muted-foreground">
-                    Clearing the cache will remove all stored audio files. You'll need to regenerate them when needed.
-                  </p>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-        <DialogFooter className="sm:justify-between">
-          <Button
-            variant="secondary"
-            onClick={() => onOpenChange(false)}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSaveKey} disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Settings"}
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="audio" className="space-y-4 mt-4">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="cache">
+                <AccordionTrigger>
+                  <div className="flex items-center">
+                    <Database className="h-4 w-4 mr-2" />
+                    Audio Cache
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pt-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Cached Items</p>
+                        <p className="text-2xl font-bold">{cacheStats.entryCount}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Total Size</p>
+                        <p className="text-2xl font-bold">{formatBytes(cacheStats.totalSize)}</p>
+                      </div>
+                    </div>
+                    
+                    {cacheStats.oldestEntry && (
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Oldest Item</p>
+                        <p className="text-sm">{formatRelativeTime(cacheStats.oldestEntry)}</p>
+                      </div>
+                    )}
+                    
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleClearCache}
+                      disabled={isClearingCache || cacheStats.entryCount === 0}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {isClearingCache ? "Clearing..." : "Clear Cache"}
+                    </Button>
+                    
+                    <p className="text-xs text-muted-foreground">
+                      Clearing the cache will remove all saved audio files. You'll need to
+                      regenerate them when studying.
+                    </p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+          
+          <TabsContent value="notifications" className="mt-4">
+            <NotificationSettings />
+          </TabsContent>
+        </Tabs>
+        
+        <DialogFooter>
+          <Button onClick={saveApiKeys} disabled={isLoading}>
+            {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>
