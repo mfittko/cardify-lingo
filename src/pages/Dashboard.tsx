@@ -157,8 +157,20 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <div className="flex items-center mb-6">
-        <div className="relative w-full max-w-sm">
+      {/* Search and tabs layout */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="due">
+              Due for Review
+            </TabsTrigger>
+            <TabsTrigger value="all">
+              All Decks
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        <div className="relative w-full sm:max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
@@ -170,17 +182,9 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <Tabs 
-        defaultValue="due" 
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="mb-8"
-      >
-        <TabsList>
-          <TabsTrigger value="due">Due for Review</TabsTrigger>
-          <TabsTrigger value="all">All Decks</TabsTrigger>
-        </TabsList>
-        <TabsContent value="all" className="mt-6">
+      {/* Table content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <TabsContent value="all">
           {filteredDecks.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center">
@@ -271,7 +275,8 @@ const Dashboard = () => {
             </Card>
           )}
         </TabsContent>
-        <TabsContent value="due" className="mt-6">
+        
+        <TabsContent value="due">
           {filteredDecks.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center">
